@@ -19,6 +19,7 @@
   label{ font-size:13px; font-weight:700; display:block; margin-bottom:6px; }
   select{ width:100%; font-size:20px; padding:14px; border:2px solid #ccc; border-radius:10px;
     background:#fff; margin-bottom:16px; }
+  select option:disabled{ color:#bbb; }
   .btns{ display:flex; gap:10px; }
   button{ flex:1; font-size:18px; font-weight:800; padding:18px 0; border:none; border-radius:12px;
     color:#fff; cursor:pointer; }
@@ -53,8 +54,8 @@
   </div>
 
   <div class="note">
+    ・「他端末が使用中」の神輿は選べません（二重送信の防止）<br>
     ・画面はつけたままにしてください（自動で消えないようにします）<br>
-    ・電波が悪い場所では送信が遅れることがあります<br>
     ・充電しながらの使用を推奨します
   </div>
 
@@ -63,22 +64,24 @@
   const $  = (id) => document.getElementById(id);
   const sel = $("mikoshiSelect");
 
+  // この端末の固有トークン（担当ロック用。端末ごとに一意）
+  let TOKEN = localStorage.getItem("deviceToken");
+  if (!TOKEN){ TOKEN = "d-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("deviceToken", TOKEN); }
+
   // 神輿リストを選択肢に反映
   CONFIG.MIKOSHI.forEach(m => {
     const o = document.createElement("option");
-    o.value = m.id;
-    o.textContent = m.id + " ： " + m.name;
+    o.value = m.id; o.textContent = m.id + " ： " + m.name;
     sel.appendChild(o);
   });
-  // 前回選んだ神輿を復元
   const saved = localStorage.getItem("mikoshiId");
   if (saved) sel.value = saved;
 
-  let watchId = null, timer = null, lastPos = null, wakeLock = null;
+  let watchId = null, timer = null, lastPos = null, wakeLock = null, takenTimer = null;
 
   function setStatus(mark, msg, cls){
-    const s = $("status");
-    s.className = cls || "";
+    const s = $("status"); s.className = cls || "";
     s.innerHTML = '<span class="big">' + mark + '</span>' + msg;
   }
   function log(msg){
@@ -86,35 +89,55 @@
     $("log").innerHTML = "[" + t + "] " + msg + "<br>" + $("log").innerHTML;
   }
 
-  async function requestWakeLock(){
+  // 使用中の神輿を選択肢から無効化（送信していない時だけ更新）
+  async function refreshTaken(){
+    if (watchId !== null) return;              // 送信中は触らない
     try{
-      if ("wakeLock" in navigator){
-        wakeLock = await navigator.wakeLock.request("screen");
+      const url = CONFIG.GAS_URL + (CONFIG.GAS_URL.includes("?") ? "&" : "?") + "_=" + Date.now();
+      const j = await (await fetch(url)).json();
+      const now = j.server || Date.now();
+      const taken = {};
+      (j.mikoshi || []).forEach(d => {
+        if (d.updated && (now - d.updated) / 1000 < CONFIG.CLAIM_SEC) taken[d.id] = true;
+      });
+      const own = localStorage.getItem("mikoshiId");
+      [...sel.options].forEach(o => {
+        const m = CONFIG.MIKOSHI.find(x => x.id === o.value);
+        const base = o.value + " ： " + (m ? m.name : "");
+        if (taken[o.value] && o.value !== own){ o.textContent = base + "（他端末が使用中）"; o.disabled = true; }
+        else { o.textContent = base; o.disabled = false; }
+      });
+      if (sel.selectedOptions[0] && sel.selectedOptions[0].disabled){
+        const first = [...sel.options].find(o => !o.disabled);
+        if (first) sel.value = first.value;
       }
-    }catch(e){ /* 非対応でも動作は継続 */ }
+    }catch(_){}
   }
-  // 画面復帰時にロックを取り直す
+
+  async function requestWakeLock(){
+    try{ if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); }
+    catch(e){}
+  }
   document.addEventListener("visibilitychange", () => {
     if (wakeLock !== null && document.visibilityState === "visible") requestWakeLock();
   });
 
   async function start(){
     if (!("geolocation" in navigator)){ setStatus("⚠","この端末はGPS非対応です","err"); return; }
+    if (sel.selectedOptions[0] && sel.selectedOptions[0].disabled){
+      setStatus("⚠","この神輿は別の端末が送信中です","err"); return;
+    }
     localStorage.setItem("mikoshiId", sel.value);
     sel.disabled = true; $("startBtn").disabled = true; $("stopBtn").disabled = false;
     setStatus("📡","GPSを取得しています…","");
     await requestWakeLock();
 
     watchId = navigator.geolocation.watchPosition(
-      p => {
-        lastPos = p;
-        setStatus("🟢","送信中（精度 ±" + Math.round(p.coords.accuracy) + "m）","on");
-      },
+      p => { lastPos = p; setStatus("🟢","送信中（精度 ±" + Math.round(p.coords.accuracy) + "m）","on"); },
       err => { setStatus("⚠","GPSエラー：" + err.message,"err"); },
       { enableHighAccuracy:true, maximumAge:10000, timeout:20000 }
     );
-
-    send();                                        // すぐ1回送る
+    send();
     timer = setInterval(send, CONFIG.SEND_INTERVAL);
   }
 
@@ -125,33 +148,44 @@
     watchId = timer = null;
     sel.disabled = false; $("startBtn").disabled = false; $("stopBtn").disabled = true;
     setStatus("⏸","停止しました","");
+    refreshTaken();
+  }
+
+  // 別端末に取られていた場合の処理
+  function onBlocked(){
+    stop();
+    setStatus("🚫","この神輿は別の端末が送信中です。別の神輿を選んでください","err");
+    log("送信拒否：別端末が使用中");
   }
 
   function send(){
     if (!lastPos){ log("まだ位置が取れていません（再試行します）"); return; }
     const m = CONFIG.MIKOSHI.find(x => x.id === sel.value);
-    // ※ヘッダを付けない文字列POST → GASでCORSエラーにならない書き方
     const body = JSON.stringify({
       key:  CONFIG.API_KEY,
+      token: TOKEN,
       id:   sel.value,
       name: m ? m.name : "",
       lat:  lastPos.coords.latitude,
       lng:  lastPos.coords.longitude,
-      speed: lastPos.coords.speed   // m/s（取得できない端末は null）
+      speed: lastPos.coords.speed
     });
     fetch(CONFIG.GAS_URL, { method:"POST", body: body })
       .then(async r => {
-        try{
-          const d = await r.json();
-          if (d.ok) log("送信成功");
-          else      log("サーバー応答：" + (d.error || "不明"));
-        }catch(_){ log("送信しました（応答は確認できませんでした）"); }
+        let d = {};
+        try{ d = await r.json(); }catch(_){ log("送信しました（応答は確認できませんでした）"); return; }
+        if (d.ok) log("送信成功");
+        else if (d.error === "in_use") onBlocked();
+        else log("サーバー応答：" + (d.error || "不明"));
       })
       .catch(e => log("通信エラー：" + e.message));
   }
 
   $("startBtn").onclick = start;
   $("stopBtn").onclick  = stop;
+
+  refreshTaken();
+  takenTimer = setInterval(refreshTaken, 15000);
 </script>
 </body>
 </html>
