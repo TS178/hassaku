@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>神輿トラッカー 管理</title>
+<style>
+  :root{ --ai:#1b2f52; --shu:#d7402b; --ok:#2e7d32; --off:#9e9e9e; --ng:#c62828; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:system-ui,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:#f2efe6; color:#222; padding:16px; }
+  h1{ font-size:18px; color:var(--ai); }
+  .bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  input[type=password]{ font-size:15px; padding:10px; border:2px solid #ccc; border-radius:8px; }
+  button{ font-size:14px; font-weight:700; padding:10px 14px; border:none; border-radius:8px;
+    background:var(--ai); color:#fff; cursor:pointer; }
+  button.del{ background:var(--ng); }
+  button:disabled{ opacity:.4; }
+  .msg{ margin:8px 0; font-size:13px; min-height:18px; }
+  table{ width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; }
+  th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid #eee; font-size:14px; }
+  th{ background:#f7f4ec; font-size:12px; color:#666; }
+  .badge{ font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; }
+  .ok{ background:#e6f4ea; color:var(--ok); } .offb{ background:#eee; color:#616161; }
+  .non{ background:#f3ede0; color:#a99; }
+  .note{ font-size:12px; color:#777; margin-top:14px; line-height:1.7; }
+</style>
+</head>
+<body>
+  <h1>🛠 神輿トラッカー 管理画面</h1>
+  <div class="bar">
+    <input id="pw" type="password" placeholder="管理パスワード" autocomplete="off">
+    <button id="refresh">更新</button>
+  </div>
+  <div class="msg" id="msg"></div>
+
+  <table>
+    <thead><tr><th>神輿</th><th>状態</th><th>最終更新</th><th>操作</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="note">
+    ・「削除」を押すと、その神輿の位置データが消え、地図から消えます（＝別端末が担当し直せます）<br>
+    ・パスワードは端末に保存されません。閉じると消えます。管理画面のURLは運営内だけで共有してください。
+  </div>
+
+<script src="../js/config.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const state = {};
+  let serverTime = 0;
+
+  function ago(sec){
+    if (sec < 60) return Math.floor(sec) + "秒前";
+    if (sec < 3600) return Math.floor(sec/60) + "分前";
+    return Math.floor(sec/3600) + "時間前";
+  }
+
+  async function load(){
+    try{
+      const url = CONFIG.GAS_URL + (CONFIG.GAS_URL.includes("?") ? "&" : "?") + "_=" + Date.now();
+      const j = await (await fetch(url)).json();
+      serverTime = j.server || Date.now();
+      (j.mikoshi || []).forEach(d => state[d.id] = d);
+      render();
+    }catch(e){ $("msg").textContent = "取得エラー：" + e.message; }
+  }
+
+  function render(){
+    const tb = $("tbody"); tb.innerHTML = "";
+    CONFIG.MIKOSHI.forEach(m => {
+      const d = state[m.id];
+      let stTxt, cls, upd = "―";
+      if (!d || !d.updated){ stTxt = "未受信"; cls = "non"; }
+      else {
+        const sec = (serverTime - d.updated)/1000;
+        const off = sec > CONFIG.OFFLINE_SEC;
+        stTxt = off ? "通信断" : "正常"; cls = off ? "offb" : "ok";
+        upd = ago(sec);
+      }
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td><b>" + m.id + "</b>　" + m.name + "</td>" +
+        '<td><span class="badge ' + cls + '">' + stTxt + "</span></td>" +
+        "<td>" + upd + "</td>" +
+        '<td><button class="del" data-id="' + m.id + '">削除</button></td>';
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll("button.del").forEach(b => b.onclick = () => del(b.dataset.id));
+  }
+
+  async function del(id){
+    const pw = $("pw").value.trim();
+    if (!pw){ $("msg").textContent = "管理パスワードを入力してください"; return; }
+    const m = CONFIG.MIKOSHI.find(x => x.id === id);
+    if (!confirm("「" + (m ? m.name : id) + "」の位置データを削除します。よろしいですか？")) return;
+    $("msg").textContent = "削除中…";
+    try{
+      const body = JSON.stringify({ action:"delete", adminKey: pw, id: id });
+      const j = await (await fetch(CONFIG.GAS_URL, { method:"POST", body })).json();
+      if (j.ok){
+        delete state[id];
+        $("msg").textContent = "削除しました：" + (m ? m.name : id);
+        load();
+      } else if (j.error === "admin_auth"){
+        $("msg").textContent = "パスワードが違います";
+      } else {
+        $("msg").textContent = "エラー：" + (j.error || "不明");
+      }
+    }catch(e){ $("msg").textContent = "通信エラー：" + e.message; }
+  }
+
+  $("refresh").onclick = load;
+  load();
+  setInterval(load, 15000);
+</script>
+</body>
+</html>
