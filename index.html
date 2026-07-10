@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>神輿現在地マップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="lantern">🏮</span> 神輿現在地マップ</div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <div class="layout">
+    <div id="map"></div>
+
+    <aside class="panel" id="panel">
+      <div class="panel-head">
+        <div class="search">
+          <input id="search" type="search" placeholder="神輿名で検索（例：本町）" autocomplete="off">
+        </div>
+        <div class="counts" id="counts">受信 0 ／ 通信断 0 ／ 未受信 0</div>
+      </div>
+      <ul class="list" id="list"></ul>
+      <div class="panel-foot" id="foot">最終取得：--</div>
+    </aside>
+
+    <button class="panel-toggle" id="panelToggle" aria-label="一覧の表示切替">一覧 ▲</button>
+  </div>
+
+  <div class="banner" id="banner"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./js/config.js"></script>
+<script src="./js/map.js"></script>
+</body>
+</html>

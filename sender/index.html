@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>神輿GPS送信</title>
+<style>
+  :root{ --ai:#1f3a5f; --shu:#d7402b; --ok:#2e7d32; --ng:#c62828; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0; font-family:system-ui,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--ai); color:#fff; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; padding:16px;
+  }
+  h1{ font-size:20px; letter-spacing:.1em; margin:8px 0 4px; }
+  .sub{ font-size:12px; opacity:.8; margin-bottom:16px; }
+  .card{ width:100%; max-width:420px; background:#fff; color:#222; border-radius:14px;
+    padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.3); }
+  label{ font-size:13px; font-weight:700; display:block; margin-bottom:6px; }
+  select{ width:100%; font-size:20px; padding:14px; border:2px solid #ccc; border-radius:10px;
+    background:#fff; margin-bottom:16px; }
+  .btns{ display:flex; gap:10px; }
+  button{ flex:1; font-size:18px; font-weight:800; padding:18px 0; border:none; border-radius:12px;
+    color:#fff; cursor:pointer; }
+  #startBtn{ background:var(--shu); }
+  #stopBtn{ background:#777; }
+  button:disabled{ opacity:.4; }
+  #status{ margin-top:16px; padding:16px; border-radius:10px; font-size:16px; font-weight:800;
+    text-align:center; background:#eee; color:#333; }
+  #status.on{ background:#e8f5e9; color:var(--ok); }
+  #status.err{ background:#ffebee; color:var(--ng); }
+  .big{ font-size:28px; display:block; margin-bottom:4px; }
+  #log{ margin-top:14px; font-size:12px; color:#555; max-height:150px; overflow:auto;
+    background:#f6f6f6; border-radius:8px; padding:10px; line-height:1.6; }
+  .note{ font-size:12px; opacity:.85; max-width:420px; margin-top:14px; line-height:1.7; }
+</style>
+</head>
+<body>
+  <h1>🏮 神輿GPS送信</h1>
+  <div class="sub">この端末が乗る神輿を選んで「送信開始」を押してください</div>
+
+  <div class="card">
+    <label for="mikoshiSelect">この端末の神輿</label>
+    <select id="mikoshiSelect"></select>
+
+    <div class="btns">
+      <button id="startBtn">送信開始</button>
+      <button id="stopBtn" disabled>停止</button>
+    </div>
+
+    <div id="status"><span class="big">⏸</span>待機中</div>
+    <div id="log"></div>
+  </div>
+
+  <div class="note">
+    ・画面はつけたままにしてください（自動で消えないようにします）<br>
+    ・電波が悪い場所では送信が遅れることがあります<br>
+    ・充電しながらの使用を推奨します
+  </div>
+
+<script src="../js/config.js"></script>
+<script>
+  const $  = (id) => document.getElementById(id);
+  const sel = $("mikoshiSelect");
+
+  // 神輿リストを選択肢に反映
+  CONFIG.MIKOSHI.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m.id;
+    o.textContent = m.id + " ： " + m.name;
+    sel.appendChild(o);
+  });
+  // 前回選んだ神輿を復元
+  const saved = localStorage.getItem("mikoshiId");
+  if (saved) sel.value = saved;
+
+  let watchId = null, timer = null, lastPos = null, wakeLock = null;
+
+  function setStatus(mark, msg, cls){
+    const s = $("status");
+    s.className = cls || "";
+    s.innerHTML = '<span class="big">' + mark + '</span>' + msg;
+  }
+  function log(msg){
+    const t = new Date().toLocaleTimeString("ja-JP");
+    $("log").innerHTML = "[" + t + "] " + msg + "<br>" + $("log").innerHTML;
+  }
+
+  async function requestWakeLock(){
+    try{
+      if ("wakeLock" in navigator){
+        wakeLock = await navigator.wakeLock.request("screen");
+      }
+    }catch(e){ /* 非対応でも動作は継続 */ }
+  }
+  // 画面復帰時にロックを取り直す
+  document.addEventListener("visibilitychange", () => {
+    if (wakeLock !== null && document.visibilityState === "visible") requestWakeLock();
+  });
+
+  async function start(){
+    if (!("geolocation" in navigator)){ setStatus("⚠","この端末はGPS非対応です","err"); return; }
+    localStorage.setItem("mikoshiId", sel.value);
+    sel.disabled = true; $("startBtn").disabled = true; $("stopBtn").disabled = false;
+    setStatus("📡","GPSを取得しています…","");
+    await requestWakeLock();
+
+    watchId = navigator.geolocation.watchPosition(
+      p => {
+        lastPos = p;
+        setStatus("🟢","送信中（精度 ±" + Math.round(p.coords.accuracy) + "m）","on");
+      },
+      err => { setStatus("⚠","GPSエラー：" + err.message,"err"); },
+      { enableHighAccuracy:true, maximumAge:10000, timeout:20000 }
+    );
+
+    send();                                        // すぐ1回送る
+    timer = setInterval(send, CONFIG.SEND_INTERVAL);
+  }
+
+  function stop(){
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    if (timer) clearInterval(timer);
+    if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; }
+    watchId = timer = null;
+    sel.disabled = false; $("startBtn").disabled = false; $("stopBtn").disabled = true;
+    setStatus("⏸","停止しました","");
+  }
+
+  function send(){
+    if (!lastPos){ log("まだ位置が取れていません（再試行します）"); return; }
+    const m = CONFIG.MIKOSHI.find(x => x.id === sel.value);
+    // ※ヘッダを付けない文字列POST → GASでCORSエラーにならない書き方
+    const body = JSON.stringify({
+      key:  CONFIG.API_KEY,
+      id:   sel.value,
+      name: m ? m.name : "",
+      lat:  lastPos.coords.latitude,
+      lng:  lastPos.coords.longitude,
+      speed: lastPos.coords.speed   // m/s（取得できない端末は null）
+    });
+    fetch(CONFIG.GAS_URL, { method:"POST", body: body })
+      .then(async r => {
+        try{
+          const d = await r.json();
+          if (d.ok) log("送信成功");
+          else      log("サーバー応答：" + (d.error || "不明"));
+        }catch(_){ log("送信しました（応答は確認できませんでした）"); }
+      })
+      .catch(e => log("通信エラー：" + e.message));
+  }
+
+  $("startBtn").onclick = start;
+  $("stopBtn").onclick  = stop;
+</script>
+</body>
+</html>
