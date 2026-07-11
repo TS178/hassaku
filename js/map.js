@@ -133,7 +133,7 @@ function focusMikoshi(id){
   }
   if (window.matchMedia("(max-width:720px)").matches){
     document.getElementById("panel").classList.remove("open");
-    document.getElementById("panelToggle").textContent = "一覧 ▲";
+    document.getElementById("panelToggle").textContent = "🔍 神輿検索 ▲";
   }
 }
 
@@ -170,7 +170,7 @@ document.getElementById("search").addEventListener("input", updateList);
 document.getElementById("panelToggle").addEventListener("click", () => {
   const p = document.getElementById("panel");
   const open = p.classList.toggle("open");
-  document.getElementById("panelToggle").textContent = open ? "一覧 ▼" : "一覧 ▲";
+  document.getElementById("panelToggle").textContent = open ? "🔍 神輿検索 ▼" : "🔍 神輿検索 ▲";
 });
 setInterval(() => { document.getElementById("clock").textContent = clock(Date.now()); }, 1000);
 
