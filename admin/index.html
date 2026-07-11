@@ -8,41 +8,63 @@
   :root{ --ai:#1b2f52; --shu:#d7402b; --ok:#2e7d32; --off:#9e9e9e; --ng:#c62828; }
   *{ box-sizing:border-box; }
   body{ margin:0; font-family:system-ui,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
-    background:#f2efe6; color:#222; padding:16px; }
-  h1{ font-size:18px; color:var(--ai); }
-  .bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
-  input[type=password]{ font-size:15px; padding:10px; border:2px solid #ccc; border-radius:8px; }
-  button{ font-size:14px; font-weight:700; padding:10px 14px; border:none; border-radius:8px;
+    background:#f2efe6; color:#222; padding:16px; max-width:760px; margin-inline:auto; }
+  h1{ font-size:19px; color:var(--ai); margin:4px 0 16px; }
+
+  /* パスワード欄 */
+  .panel{ background:#fff; border:1px solid #e4ddcd; border-radius:12px; padding:16px; margin-bottom:14px; }
+  .lbl{ display:block; font-size:14px; font-weight:800; color:var(--ai); margin-bottom:6px; }
+  #pw{ width:100%; font-size:16px; padding:12px; border:2px solid #ccc; border-radius:8px; }
+  #pw.bad{ border-color:var(--ng); background:#fff5f5; }
+  .hint{ font-size:12px; color:#777; margin-top:8px; line-height:1.6; }
+
+  /* 大きな通知バナー */
+  .alert{ font-size:15px; font-weight:800; padding:14px 16px; border-radius:10px; margin-bottom:14px;
+    border-left:6px solid; }
+  .alert.err{ background:#ffe9e9; color:var(--ng); border-color:var(--ng); }
+  .alert.ok{  background:#e7f6ea; color:var(--ok); border-color:var(--ok); }
+  .alert.info{ background:#eef2f8; color:var(--ai); border-color:var(--ai); }
+
+  /* 一覧見出し */
+  .listhead{ display:flex; align-items:center; justify-content:space-between; margin:6px 0 4px; }
+  .listhead .ttl{ font-size:14px; font-weight:800; color:#555; }
+  #refresh{ font-size:13px; font-weight:700; padding:9px 14px; border:none; border-radius:8px;
     background:var(--ai); color:#fff; cursor:pointer; }
-  button.del{ background:var(--ng); }
-  button:disabled{ opacity:.4; }
-  .msg{ margin:8px 0; font-size:13px; min-height:18px; }
-  table{ width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; }
-  th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid #eee; font-size:14px; }
+  .hint2{ font-size:12px; color:#888; margin-bottom:10px; line-height:1.6; }
+
+  table{ width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden;
+    border:1px solid #e4ddcd; }
+  th,td{ text-align:left; padding:11px 12px; border-bottom:1px solid #eee; font-size:14px; }
   th{ background:#f7f4ec; font-size:12px; color:#666; }
+  tr:last-child td{ border-bottom:none; }
   .badge{ font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; }
   .ok{ background:#e6f4ea; color:var(--ok); } .offb{ background:#eee; color:#616161; }
   .non{ background:#f3ede0; color:#a99; }
-  .note{ font-size:12px; color:#777; margin-top:14px; line-height:1.7; }
+  button.del{ font-size:13px; font-weight:700; padding:8px 14px; border:none; border-radius:8px;
+    background:var(--ng); color:#fff; cursor:pointer; }
 </style>
 </head>
 <body>
   <h1>🛠 神輿トラッカー 管理画面</h1>
-  <div class="bar">
-    <input id="pw" type="password" placeholder="管理パスワード" autocomplete="off">
-    <button id="refresh">更新</button>
+
+  <div class="panel">
+    <label class="lbl" for="pw">管理パスワード</label>
+    <input id="pw" type="password" placeholder="ここに管理パスワードを入力" autocomplete="off">
+    <div class="hint">神輿データを「削除」するときに使います。このパスワードは端末に保存されません（画面を閉じると消えます）。</div>
   </div>
-  <div class="msg" id="msg"></div>
+
+  <div class="alert info" id="alert">パスワードを入力し、削除したい神輿の行の「削除」を押してください。</div>
+
+  <div class="listhead">
+    <span class="ttl">神輿の受信状況</span>
+    <button id="refresh">🔄 状態を再読み込み</button>
+  </div>
+  <div class="hint2">一覧は15秒ごとに自動で最新化されます。「再読み込み」は、今すぐ最新状況を取り込みたいときに押すボタンです。</div>
 
   <table>
     <thead><tr><th>神輿</th><th>状態</th><th>最終更新</th><th>操作</th></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
-
-  <div class="note">
-    ・「削除」を押すと、その神輿の位置データが消え、地図から消えます（＝別端末が担当し直せます）<br>
-    ・パスワードは端末に保存されません。閉じると消えます。管理画面のURLは運営内だけで共有してください。
-  </div>
 
 <script src="../js/config.js"></script>
 <script>
@@ -50,6 +72,11 @@
   const state = {};
   let serverTime = 0;
 
+  function setAlert(msg, kind){                 // kind: 'err' | 'ok' | 'info'
+    const a = $("alert");
+    a.className = "alert " + (kind || "info");
+    a.textContent = msg;
+  }
   function ago(sec){
     if (sec < 60) return Math.floor(sec) + "秒前";
     if (sec < 3600) return Math.floor(sec/60) + "分前";
@@ -63,7 +90,7 @@
       serverTime = j.server || Date.now();
       (j.mikoshi || []).forEach(d => state[d.id] = d);
       render();
-    }catch(e){ $("msg").textContent = "取得エラー：" + e.message; }
+    }catch(e){ setAlert("状態の取得に失敗しました：" + e.message, "err"); }
   }
 
   function render(){
@@ -75,8 +102,7 @@
       else {
         const sec = (serverTime - d.updated)/1000;
         const off = sec > CONFIG.OFFLINE_SEC;
-        stTxt = off ? "通信断" : "正常"; cls = off ? "offb" : "ok";
-        upd = ago(sec);
+        stTxt = off ? "通信断" : "正常"; cls = off ? "offb" : "ok"; upd = ago(sec);
       }
       const tr = document.createElement("tr");
       tr.innerHTML =
@@ -90,27 +116,35 @@
   }
 
   async function del(id){
-    const pw = $("pw").value.trim();
-    if (!pw){ $("msg").textContent = "管理パスワードを入力してください"; return; }
+    const pwEl = $("pw");
+    const pw = pwEl.value.trim();
+    if (!pw){
+      pwEl.classList.add("bad"); pwEl.focus();
+      setAlert("⚠ 先に管理パスワードを入力してください（上の入力欄）", "err");
+      return;
+    }
+    pwEl.classList.remove("bad");
     const m = CONFIG.MIKOSHI.find(x => x.id === id);
     if (!confirm("「" + (m ? m.name : id) + "」の位置データを削除します。よろしいですか？")) return;
-    $("msg").textContent = "削除中…";
+    setAlert("削除中…", "info");
     try{
       const body = JSON.stringify({ action:"delete", adminKey: pw, id: id });
       const j = await (await fetch(CONFIG.GAS_URL, { method:"POST", body })).json();
       if (j.ok){
         delete state[id];
-        $("msg").textContent = "削除しました：" + (m ? m.name : id);
+        setAlert("✅ 削除しました：" + (m ? m.name : id), "ok");
         load();
       } else if (j.error === "admin_auth"){
-        $("msg").textContent = "パスワードが違います";
+        pwEl.classList.add("bad"); pwEl.focus();
+        setAlert("⚠ 管理パスワードが違います", "err");
       } else {
-        $("msg").textContent = "エラー：" + (j.error || "不明");
+        setAlert("エラー：" + (j.error || "不明"), "err");
       }
-    }catch(e){ $("msg").textContent = "通信エラー：" + e.message; }
+    }catch(e){ setAlert("通信エラー：" + e.message, "err"); }
   }
 
-  $("refresh").onclick = load;
+  $("pw").addEventListener("input", () => $("pw").classList.remove("bad"));
+  $("refresh").onclick = () => { setAlert("最新の状態を取り込みました", "info"); load(); };
   load();
   setInterval(load, 15000);
 </script>
