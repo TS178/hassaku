@@ -8,7 +8,7 @@
  * ============================================================ */
 
 const API_KEY   = "Hassaku2026";        // config.js と同じ（送信用の合言葉）
-const ADMIN_KEY = "　　　";    // 管理者パスワード（公開ファイルには書かない）
+const ADMIN_KEY = "　　　　　　";    // 管理者パスワード（公開ファイルには書かない）
 const CLAIM_TIMEOUT_SEC = 150;                  // 使用中とみなす秒数（config.js CLAIM_SEC と同値）
 const TZ = "Asia/Tokyo";
 
@@ -133,8 +133,12 @@ function doPost(e){
   finally{ lock.releaseLock(); }
 }
 
-/* ---- 閲覧・管理へ最新位置を返す（owner列は返さない） ---- */
+/* ---- 閲覧・管理・履歴の取得 ---- */
 function doGet(e){
+  const p=(e&&e.parameter)?e.parameter:{};
+  if(p.type==="years")   return getYears_();
+  if(p.type==="history") return getHistoryJson_(p.year,p.id);
+
   const cache=CacheService.getScriptCache();
   const cached=cache.get(CACHE_KEY);
   if(cached) return out_raw_(cached);
@@ -151,6 +155,34 @@ function doGet(e){
   cache.put(CACHE_KEY, body, CACHE_SEC);
   return out_raw_(body);
 }
+
+/* ---- 履歴：年度一覧 ---- */
+function getYears_(){
+  const cache=CacheService.getScriptCache();
+  const c=cache.get("years"); if(c) return out_raw_(c);
+  const sh=getHistory_(); const last=sh.getLastRow(); const set={};
+  if(last>=2){ sh.getRange(2,1,last-1,1).getValues().forEach(r=>{ if(r[0]!=="") set[String(r[0])]=true; }); }
+  const body=JSON.stringify({ok:true,years:Object.keys(set).sort()});
+  cache.put("years",body,300);
+  return out_raw_(body);
+}
+
+/* ---- 履歴：指定年度（任意で神輿ID）の全点を返す ---- */
+function getHistoryJson_(year,id){
+  const sh=getHistory_(); const last=sh.getLastRow(); const pts=[];
+  if(last>=2){
+    const v=sh.getRange(2,1,last-1,8).getValues();
+    for(let i=0;i<v.length;i++){
+      const r=v[i];
+      if(year && String(r[0])!==String(year)) continue;
+      if(id && r[3]!==id) continue;
+      pts.push([r[3], Number(r[5]), Number(r[6]), fmtDate_(r[1])+" "+fmtTime_(r[2])]);
+    }
+  }
+  return out_({ok:true,year:year||null,points:pts});
+}
+function fmtDate_(v){ return (v instanceof Date)?Utilities.formatDate(v,TZ,"yyyy/MM/dd"):String(v); }
+function fmtTime_(v){ return (v instanceof Date)?Utilities.formatDate(v,TZ,"HH:mm:ss"):String(v); }
 
 function out_(obj){ return out_raw_(JSON.stringify(obj)); }
 function out_raw_(str){ return ContentService.createTextOutput(str).setMimeType(ContentService.MimeType.JSON); }
