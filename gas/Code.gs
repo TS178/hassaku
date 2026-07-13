@@ -7,8 +7,8 @@
  *    デプロイ → デプロイを管理 → 鉛筆 → バージョン「新バージョン」→ デプロイ
  * ============================================================ */
 
-const API_KEY   = "matsuri2025-himitsu";        // config.js と同じ（送信用の合言葉）
-const ADMIN_KEY = "kanri-himitsu-CHANGE_ME";    // 管理者パスワード（公開ファイルには書かない）
+const API_KEY   = "Hassaku2026";        // config.js と同じ（送信用の合言葉）
+const ADMIN_KEY = "　　　";    // 管理者パスワード（公開ファイルには書かない）
 const CLAIM_TIMEOUT_SEC = 150;                  // 使用中とみなす秒数（config.js CLAIM_SEC と同値）
 const TZ = "Asia/Tokyo";
 
