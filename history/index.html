@@ -85,7 +85,7 @@
 
   const colorOf=(id)=>{ const m=CONFIG.MIKOSHI.find(x=>x.id===id); return m?m.color:"#3366cc"; };
   const nameOf =(id)=>{ const m=CONFIG.MIKOSHI.find(x=>x.id===id); return m?m.name:id; };
-  const iconOf =(id)=>{ const m=CONFIG.MIKOSHI.find(x=>x.id===id); return m?m.icon:""; };
+  const iconOf =(id)=>{ const m=CONFIG.MIKOSHI.find(x=>x.id===id); return (m&&m.icon)?("../"+m.icon):""; };
 
   let routes={};          // id -> [{lat,lng,t}]
   let layers=[];          // 描画中のLeafletレイヤ
@@ -150,15 +150,23 @@
     ids.forEach(id=>{
       const arr=routes[id]; const col=colorOf(id);
       const latlngs=arr.map(p=>[p.lat,p.lng]);
-      const line=L.polyline(latlngs,{color:col,weight:4,opacity:.75}).addTo(map); layers.push(line);
+      // 経路をつなぐ細い線（うっすら）
+      layers.push(L.polyline(latlngs,{color:col,weight:2,opacity:.28}).addTo(map));
+      // 足跡（約45mごとに点を置く）
+      const spacing=45; let acc=spacing, dist=0;
+      for(let i=0;i<arr.length;i++){
+        if(i>0){ const d=haversine(arr[i-1],arr[i]); if(d<300){ dist+=d; acc+=d; } }
+        if(acc>=spacing){
+          acc=0;
+          layers.push(L.circleMarker([arr[i].lat,arr[i].lng],
+            {radius:4,color:"#fff",weight:1,fillColor:col,fillOpacity:.9}).addTo(map));
+        }
+        all.push([arr[i].lat,arr[i].lng]);
+      }
       const s=arr[0], e=arr[arr.length-1];
-      layers.push(L.circleMarker([s.lat,s.lng],{radius:6,color:"#fff",weight:2,fillColor:col,fillOpacity:1}).addTo(map).bindPopup(nameOf(id)+"：出発 "+clock(s.t)));
-      layers.push(L.circleMarker([e.lat,e.lng],{radius:6,color:col,weight:3,fillColor:"#fff",fillOpacity:1}).addTo(map).bindPopup(nameOf(id)+"：終点 "+clock(e.t)));
-      latlngs.forEach(ll=>all.push(ll));
+      layers.push(L.circleMarker([s.lat,s.lng],{radius:7,color:"#fff",weight:2,fillColor:"#2e7d32",fillOpacity:1}).addTo(map).bindPopup(nameOf(id)+"：出発 "+clock(s.t)));
+      layers.push(L.circleMarker([e.lat,e.lng],{radius:7,color:"#c62828",weight:3,fillColor:"#fff",fillOpacity:1}).addTo(map).bindPopup(nameOf(id)+"：終点 "+clock(e.t)));
       tMin=Math.min(tMin,s.t); tMax=Math.max(tMax,e.t);
-      // 距離・平均速度
-      let dist=0;
-      for(let i=1;i<arr.length;i++){ const d=haversine(arr[i-1],arr[i]); if(d<300) dist+=d; } // 300m超の飛びは誤差として除外
       const hours=(e.t-s.t)/3600000;
       rows.push({id,dist,hours,pts:arr.length});
     });
