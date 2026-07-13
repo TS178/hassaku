@@ -6,30 +6,33 @@ const CONFIG = {
 
   /* ① Google Apps Script のウェブアプリURL
    *    GAS をデプロイすると発行される「…/exec」で終わるURLを貼り付ける */
-  GAS_URL: "https://script.google.com/macros/s/AKfycbydLwSgrkduohAYUAKmUhgbBz41zYpYjstQaqKUskEvLyjh52TCuIXbWcaMrb4aBdPvEA/exec",
+  GAS_URL: "https://script.google.com/macros/s/ここにデプロイ後のIDが入る/exec",
 
   /* ② 送信用の合言葉（GAS側 Code.gs の API_KEY と必ず同じ文字列にする） */
-  API_KEY: "Hassaku2026",
+  API_KEY: "matsuri2025-himitsu",
 
-  /* ③ 送信間隔（ミリ秒）… 30秒 = 30000 */
-  SEND_INTERVAL: 30000,
+  /* ③ 送信間隔（ミリ秒）… 1分 = 60000（GPS送信は1分ごと） */
+  SEND_INTERVAL: 60000,
 
-  /* ④ 地図の自動更新間隔（ミリ秒）… 30秒 = 30000 */
+  /* ④ 地図の自動更新間隔（ミリ秒）… 30秒 = 30000（閲覧は30秒のまま） */
   REFRESH_INTERVAL: 30000,
 
-  /* ⑤ 通信断とみなす秒数（この秒数以上、更新がなければ「通信断」） */
-  OFFLINE_SEC: 120,
-  CLAIM_SEC: 120,
-  
+  /* ⑤ 通信断とみなす秒数（1分送信なので150秒＝約2.5回分で判定） */
+  OFFLINE_SEC: 150,
+
+  /* ⑤-2 「使用中」とみなす秒数（Code.gs の CLAIM_TIMEOUT_SEC と同じ値にする） */
+  CLAIM_SEC: 150,
+
   /* ⑥ 地図の初期表示（祭り会場の中心の緯度・経度）とズーム倍率
    *    Googleマップで会場を右クリック →「緯度・経度」でコピーできます */
-  MAP_CENTER: [37.144873, 136.732907],  // ← 会場に合わせて変更（例：京都駅付近）
+  MAP_CENTER: [35.0116, 135.7681],  // ← 会場に合わせて変更（例：京都駅付近）
   MAP_ZOOM: 15,
 
   /* ⑦ 神輿の定義（14基）
    *    id  … 端末が送る識別ID（重複しないこと）
    *    name… 表示名（自由に変更可）
-   *    color… 地図アイコンの色（好みで変更可） */
+   *    color… 地図マーカーのリング色（一覧の枠にも使用）
+   *    icon … 地区紋の画像パス（img/フォルダ内） */
   MIKOSHI: [
     { id: "m01", name: "森之内", color: "#c0392b", icon: "img/m01.png" },
     { id: "m02", name: "領家町",   color: "#e67e22", icon: "img/m02.png" },
