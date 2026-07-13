@@ -82,7 +82,7 @@ function updateMarkers(){
     const pos = [c.d.lat, c.d.lng];
     if (!markers[m.id]){
       markers[m.id] = L.marker(pos, { icon: makeIcon(m, c.offline) }).addTo(map);
-      markers[m.id].bindPopup(popupHtml(m, c));
+      markers[m.id].bindPopup(popupHtml(m, c), { autoPan: false });
     } else {
       markers[m.id].setLatLng(pos);
       markers[m.id].setIcon(makeIcon(m, c.offline));
