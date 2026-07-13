@@ -6,10 +6,10 @@ const CONFIG = {
 
   /* ① Google Apps Script のウェブアプリURL
    *    GAS をデプロイすると発行される「…/exec」で終わるURLを貼り付ける */
-  GAS_URL: "https://script.google.com/macros/s/ここにデプロイ後のIDが入る/exec",
+  GAS_URL: "https://script.google.com/macros/s/AKfycbydLwSgrkduohAYUAKmUhgbBz41zYpYjstQaqKUskEvLyjh52TCuIXbWcaMrb4aBdPvEA/exec",
 
   /* ② 送信用の合言葉（GAS側 Code.gs の API_KEY と必ず同じ文字列にする） */
-  API_KEY: "matsuri2025-himitsu",
+  API_KEY: "Hassaku2026",
 
   /* ③ 送信間隔（ミリ秒）… 1分 = 60000（GPS送信は1分ごと） */
   SEND_INTERVAL: 60000,
@@ -25,7 +25,7 @@ const CONFIG = {
 
   /* ⑥ 地図の初期表示（祭り会場の中心の緯度・経度）とズーム倍率
    *    Googleマップで会場を右クリック →「緯度・経度」でコピーできます */
-  MAP_CENTER: [35.0116, 135.7681],  // ← 会場に合わせて変更（例：京都駅付近）
+  MAP_CENTER: [37.144497, 136.732007],  // ← 会場に合わせて変更（例：京都駅付近）
   MAP_ZOOM: 15,
 
   /* ⑦ 神輿の定義（14基）
