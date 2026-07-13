@@ -28,10 +28,10 @@
   .wrap{ position:relative; height:calc(100% - 0px); }
   #map{ position:absolute; inset:0; background:#dfe6ea; }
 
-  .statsBtn{ position:absolute; right:10px; top:10px; z-index:1000; background:var(--ai); color:#fff;
+  .statsBtn{ position:absolute; right:10px; top:56px; z-index:1000; background:var(--ai); color:#fff;
     border:2px solid rgba(255,255,255,.6); border-radius:999px; padding:10px 16px; font-weight:800; font-size:14px;
     box-shadow:0 4px 12px rgba(0,0,0,.3); cursor:pointer; }
-  .stats{ position:absolute; right:10px; top:56px; z-index:1000; width:min(360px,92vw); max-height:70%;
+  .stats{ position:absolute; right:10px; top:102px; z-index:1000; width:min(360px,92vw); max-height:64%;
     overflow:auto; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.25);
     padding:10px; display:none; }
   .stats.open{ display:block; }
@@ -41,8 +41,8 @@
   th:first-child,td:first-child{ text-align:left; }
   .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle; }
 
-  .msg{ position:absolute; left:10px; top:10px; z-index:1000; background:#fff; border-radius:8px;
-    padding:8px 12px; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  .msg{ position:absolute; right:10px; top:10px; left:auto; z-index:1000; background:#fff; border-radius:8px;
+    padding:8px 12px; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.2); max-width:60%; text-align:right; }
 
   .mk{ width:30px;height:30px;border-radius:50%;border:3px solid #fff;overflow:hidden;background:#fff;
     box-shadow:0 1px 4px rgba(0,0,0,.5); }
