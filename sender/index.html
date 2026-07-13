@@ -168,7 +168,8 @@
       name: m ? m.name : "",
       lat:  lastPos.coords.latitude,
       lng:  lastPos.coords.longitude,
-      speed: lastPos.coords.speed
+      speed: lastPos.coords.speed,
+      acc:  lastPos.coords.accuracy
     });
     fetch(CONFIG.GAS_URL, { method:"POST", body: body })
       .then(async r => {
