@@ -42,6 +42,24 @@
   .non{ background:#f3ede0; color:#a99; }
   button.del{ font-size:13px; font-weight:700; padding:8px 14px; border:none; border-radius:8px;
     background:var(--ng); color:#fff; cursor:pointer; }
+
+  /* 参加・並び順 */
+  .rosterHead{ display:flex; align-items:center; justify-content:space-between; margin:6px 0 4px; }
+  .save{ background:#2e7d32 !important; }
+  .roster{ list-style:none; margin:0 0 20px; padding:0; background:#fff; border:1px solid var(--line);
+    border-radius:10px; overflow:hidden; }
+  .ritem{ display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid #eee; }
+  .ritem:last-child{ border-bottom:none; }
+  .ritem.off{ opacity:.5; background:#faf7f0; }
+  .ritem .nm{ flex:1; font-weight:700; font-size:14px; }
+  .ritem .id{ font-size:11px; color:#999; font-weight:400; }
+  .ritem label{ font-size:12px; display:flex; align-items:center; gap:5px; white-space:nowrap; }
+  .ritem input[type=checkbox]{ width:20px; height:20px; }
+  .ord{ display:flex; flex-direction:column; gap:3px; }
+  .ord button{ background:#5a6b86; color:#fff; border:none; border-radius:5px; width:32px; height:20px;
+    font-size:11px; line-height:1; cursor:pointer; padding:0; }
+  .ord button:disabled{ opacity:.3; }
+  .rswatch{ width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #ccc; flex:none; }
 </style>
 </head>
 <body>
@@ -55,6 +73,13 @@
 
   <div class="alert info" id="alert">パスワードを入力し、削除したい神輿の行の「削除」を押してください。</div>
 
+  <div class="rosterHead">
+    <span class="ttl">参加地区の設定（この年の参加・並び順）</span>
+    <button id="saveRoster" class="save">この設定を保存</button>
+  </div>
+  <div class="hint2">チェックを外すと非表示（不参加）になります。▲▼で並び順を変更できます。変更したら「この設定を保存」を押してください（管理パスワードが必要）。地図・送信ページに反映されます。</div>
+  <ul class="roster" id="rosterList"></ul>
+
   <div class="listhead">
     <span class="ttl">神輿の受信状況</span>
     <button id="refresh">🔄 状態を再読み込み</button>
@@ -66,7 +91,7 @@
     <tbody id="tbody"></tbody>
   </table>
 
-<script src="../js/config.js"></script>
+<script src="../js/config.js?v=7"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   const state = {};
@@ -147,6 +172,53 @@
   $("refresh").onclick = () => { setAlert("最新の状態を取り込みました", "info"); load(); };
   load();
   setInterval(load, 15000);
+
+  /* ===== 参加・並び順の設定 ===== */
+  let roster = [];   // [{id,name,color,icon,active,order}]
+
+  async function loadRosterAdmin(){
+    roster = await loadRosterFull();   // config(色/紋) + サーバー(参加/順番) を統合
+    renderRoster();
+  }
+  function renderRoster(){
+    const ul = $("rosterList"); ul.innerHTML = "";
+    roster.forEach((m, i) => {
+      const li = document.createElement("li");
+      li.className = "ritem" + (m.active ? "" : " off");
+      li.innerHTML =
+        '<div class="ord">' +
+          '<button data-up="' + i + '" ' + (i===0 ? "disabled" : "") + '>▲</button>' +
+          '<button data-down="' + i + '" ' + (i===roster.length-1 ? "disabled" : "") + '>▼</button>' +
+        '</div>' +
+        '<span class="rswatch" style="background:' + m.color + '"></span>' +
+        '<span class="nm">' + m.name + ' <span class="id">' + m.id + '</span></span>' +
+        '<label><input type="checkbox" data-chk="' + i + '" ' + (m.active ? "checked" : "") + '> 参加</label>';
+      ul.appendChild(li);
+    });
+    ul.querySelectorAll("[data-up]").forEach(b => b.onclick = () => moveRow(+b.dataset.up, -1));
+    ul.querySelectorAll("[data-down]").forEach(b => b.onclick = () => moveRow(+b.dataset.down, 1));
+    ul.querySelectorAll("[data-chk]").forEach(c => c.onchange = () => { roster[+c.dataset.chk].active = c.checked; renderRoster(); });
+  }
+  function moveRow(i, dir){
+    const j = i + dir; if (j < 0 || j >= roster.length) return;
+    const t = roster[i]; roster[i] = roster[j]; roster[j] = t; renderRoster();
+  }
+  async function saveRoster(){
+    const pw = $("pw").value.trim();
+    if (!pw){ $("pw").classList.add("bad"); $("pw").focus();
+      setAlert("⚠ 先に管理パスワードを入力してください（上の入力欄）", "err"); return; }
+    const items = roster.map((m, i) => ({ id: m.id, active: m.active, order: i + 1 }));
+    setAlert("保存中…", "info");
+    try{
+      const body = JSON.stringify({ action: "saveRoster", adminKey: pw, items: items });
+      const j = await (await fetch(CONFIG.GAS_URL, { method:"POST", body: body })).json();
+      if (j.ok){ setAlert("✅ 参加・並び順を保存しました（地図・送信ページに反映されます）", "ok"); loadRosterAdmin(); }
+      else if (j.error === "admin_auth"){ $("pw").classList.add("bad"); $("pw").focus(); setAlert("⚠ 管理パスワードが違います", "err"); }
+      else setAlert("エラー：" + (j.error || "不明"), "err");
+    }catch(e){ setAlert("通信エラー：" + e.message, "err"); }
+  }
+  $("saveRoster").onclick = saveRoster;
+  loadRosterAdmin();
 </script>
 </body>
 </html>
