@@ -34,20 +34,20 @@ const CONFIG = {
    *    color… 地図マーカーのリング色（一覧の枠にも使用）
    *    icon … 地区紋の画像パス（img/フォルダ内） */
   MIKOSHI: [
-    { id: "m01", name: "森之内", color: "#c0392b", icon: "img/m01.png" },
-    { id: "m02", name: "領家町",   color: "#e67e22", icon: "img/m02.png" },
-    { id: "m03", name: "里本江", color: "#f1c40f", icon: "img/m03.png" },
-    { id: "m04", name: "地頭町",   color: "#27ae60", icon: "img/m04.png" },
-    { id: "m05", name: "高田",     color: "#16a085", icon: "img/m05.png" },
-    { id: "m06", name: "東小室",   color: "#2980b9", icon: "img/m06.png" },
-    { id: "m07", name: "給分",   color: "#2c3e90", icon: "img/m07.png" },
-    { id: "m08", name: "和田",     color: "#8e44ad", icon: "img/m08.png" },
-    { id: "m09", name: "七海",     color: "#c0399b", icon: "img/m09.png" },
-    { id: "m10", name: "田中",     color: "#7f8c1a", icon: "img/m10.png" },
-    { id: "m11", name: "貝田",     color: "#9A6324", icon: "img/m11.png" },
-    { id: "m12", name: "大西",     color: "#111111", icon: "img/m12.png" },
-    { id: "m13", name: "相神",   color: "#d81b60", icon: "img/m13.png" },
-    { id: "m14", name: "中浜",   color: "#e84393", icon: "img/m14.png" }
+    { id: "m01", name: "森之内（本社）", color: "#FFC400", icon: "img/m01.png?v=2" },
+    { id: "m02", name: "富来領家町",     color: "#F57C00", icon: "img/m02.png?v=2" },
+    { id: "m03", name: "里本江",         color: "#FFC400", icon: "img/m03.png?v=2" },
+    { id: "m04", name: "富来地頭町",     color: "#8B0000", icon: "img/m04.png?v=2" },
+    { id: "m05", name: "富来高田",       color: "#1B5E20", icon: "img/m05.png?v=2" },
+    { id: "m06", name: "東小室",         color: "#111111", icon: "img/m06.png?v=2" },
+    { id: "m07", name: "給分",           color: "#EC5F9E", icon: "img/m07.png?v=2" },
+    { id: "m08", name: "和田",           color: "#1976D2", icon: "img/m08.png?v=2" },
+    { id: "m09", name: "七海",           color: "#1976D2", icon: "img/m09.png?v=2" },
+    { id: "m10", name: "田中",           color: "#12206E", icon: "img/m10.png?v=2" },
+    { id: "m11", name: "貝田",           color: "#AEB4B8", icon: "img/m11.png?v=2" },
+    { id: "m12", name: "大西",           color: "#E23B2E", icon: "img/m12.png?v=2" },
+    { id: "m13", name: "相神",           color: "#C9A227", icon: "img/m13.png?v=2" },
+    { id: "m14", name: "中浜",           color: "#EDEDED", icon: "img/m14.png?v=2" }
   ],
 
   /* ⑧ トイレの場所（増やす場合はここに { name, lat, lng } の行を足すだけ） */
