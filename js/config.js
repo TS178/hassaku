@@ -48,5 +48,11 @@ const CONFIG = {
     { id: "m12", name: "大西",     color: "#111111", icon: "img/m12.png" },
     { id: "m13", name: "相神",   color: "#d81b60", icon: "img/m13.png" },
     { id: "m14", name: "中浜",   color: "#e84393", icon: "img/m14.png" }
+  ],
+
+  /* ⑧ トイレの場所（増やす場合はここに { name, lat, lng } の行を足すだけ） */
+  TOILETS: [
+    { name: "冨木八幡神社 社務所", lat: 37.152385944229074, lng: 136.73750267232603 },
+    { name: "住吉神社 お手洗い",   lat: 37.13906994256999,  lng: 136.72721473095197 }
   ]
 };
