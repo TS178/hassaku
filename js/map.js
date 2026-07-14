@@ -37,6 +37,7 @@ function toiletIcon(){
 const markers = {};                 // id -> Leaflet marker
 const state   = {};                 // id -> 最新データ
 let lastServerTime = 0;             // サーバー時刻（通信断判定の基準）
+let ROSTER = CONFIG.MIKOSHI.slice(); // 参加・表示順（読み込むまでは全基）
 
 const numOf = (id) => (id.match(/\d+/) ? String(Number(id.match(/\d+/)[0])) : id);
 
@@ -106,7 +107,12 @@ function popupHtml(m, c){
 
 /* 地図マーカーを更新 */
 function updateMarkers(){
-  CONFIG.MIKOSHI.forEach(m => {
+  const activeIds = new Set(ROSTER.map(m => m.id));
+  // 参加から外れた神輿のマーカーを消す
+  Object.keys(markers).forEach(id => {
+    if (!activeIds.has(id)){ map.removeLayer(markers[id]); delete markers[id]; }
+  });
+  ROSTER.forEach(m => {
     const c = calc(m);
     if (!c.known){                       // 未受信は地図に出さない
       if (markers[m.id]){ map.removeLayer(markers[m.id]); delete markers[m.id]; }
@@ -131,7 +137,7 @@ function updateList(){
   ul.innerHTML = "";
   let nOk = 0, nOff = 0, nNon = 0;
 
-  CONFIG.MIKOSHI.forEach(m => {
+  ROSTER.forEach(m => {
     const c = calc(m);
     if (!c.known) nNon++; else if (c.offline) nOff++; else nOk++;
 
@@ -211,3 +217,11 @@ setInterval(() => { document.getElementById("clock").textContent = clock(Date.no
 fetchData();
 setInterval(fetchData, CONFIG.REFRESH_INTERVAL);
 setInterval(() => { updateMarkers(); updateList(); }, 5000);
+
+/* 参加・表示順を読み込む（起動時＋5分ごと） */
+async function refreshRoster(){
+  ROSTER = await loadRoster();
+  updateMarkers(); updateList();
+}
+refreshRoster();
+setInterval(refreshRoster, 300000);
