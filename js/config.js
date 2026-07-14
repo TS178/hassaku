@@ -25,7 +25,7 @@ const CONFIG = {
 
   /* ⑥ 地図の初期表示（祭り会場の中心の緯度・経度）とズーム倍率
    *    Googleマップで会場を右クリック →「緯度・経度」でコピーできます */
-  MAP_CENTER: [37.144497, 136.732007],  // ← 会場に合わせて変更（例：京都駅付近）
+  MAP_CENTER: [35.0116, 135.7681],  // ← 会場に合わせて変更（例：京都駅付近）
   MAP_ZOOM: 15,
 
   /* ⑦ 神輿の定義（14基）
@@ -56,3 +56,29 @@ const CONFIG = {
     { name: "住吉神社 お手洗い",   lat: 37.13906994256999,  lng: 136.72721473095197 }
   ]
 };
+
+/* ============================================================
+ *  参加・表示順の統合
+ *  ・色/紋は上の MIKOSHI（config）
+ *  ・参加/表示順は管理ページ→サーバー(Master)から取得
+ *  失敗時は config の全基をそのまま使う（フォールバック）
+ * ============================================================ */
+async function loadRosterFull(){
+  try{
+    const res = await fetch(CONFIG.GAS_URL + (CONFIG.GAS_URL.includes("?")?"&":"?") + "type=roster&_=" + Date.now());
+    const j = await res.json();
+    const map = {}; (j.roster||[]).forEach(function(r){ map[r.id]=r; });
+    const list = CONFIG.MIKOSHI.map(function(m,i){
+      const r = map[m.id];
+      return {
+        id:m.id, name:m.name, color:m.color, icon:m.icon,
+        active: r ? !!r.active : true,
+        order:  (r && r.order!=null) ? Number(r.order) : (i+1)
+      };
+    });
+    return list.sort(function(a,b){ return a.order-b.order; });
+  }catch(e){
+    return CONFIG.MIKOSHI.map(function(m,i){ return Object.assign({active:true,order:i+1}, m); });
+  }
+}
+async function loadRoster(){ return (await loadRosterFull()).filter(function(m){ return m.active; }); }
