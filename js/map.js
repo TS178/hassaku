@@ -30,7 +30,7 @@ function toiletIcon(){
 (CONFIG.TOILETS || []).forEach(function(t){
   L.marker([t.lat, t.lng], { icon: toiletIcon(), title: t.name })
     .addTo(map)
-    .bindPopup('<div class="pop"><b>🚻 トイレ</b><div class="line">'+t.name+'</div></div>');
+    .bindPopup('<div class="pop"><b>🚻 トイレ</b><div class="line">'+t.name+'</div>'+dirBtn(t.lat,t.lng)+'</div>');
 });
 
 /* ---- 内部状態 ---- */
@@ -78,6 +78,14 @@ function calc(m){
   };
 }
 
+/* Googleマップ経路ボタン（無料のURLスキーム／APIキー不要） */
+function dirBtn(lat, lng){
+  return '<a href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '" ' +
+    'target="_blank" rel="noopener" ' +
+    'style="display:inline-block;margin-top:9px;padding:9px 14px;background:#1a73e8;color:#fff;' +
+    'border-radius:8px;font-weight:700;text-decoration:none;font-size:13px;">🧭 経路（Googleマップ）</a>';
+}
+
 /* ポップアップの中身 */
 function popupHtml(m, c){
   if (!c.known) return '<div class="pop"><b>' + m.name + "</b><div class='line'>まだ位置を受信していません</div></div>";
@@ -92,6 +100,7 @@ function popupHtml(m, c){
     '<div class="line">速度：' + spd + "</div>" +
     '<div class="line">状態：<span class="' + (c.offline ? "state-off" : "state-ok") + '">' +
         (c.offline ? "⚠ 通信断" : "正常") + "</span></div>" +
+    dirBtn(d.lat, d.lng) +
     "</div>";
 }
 
