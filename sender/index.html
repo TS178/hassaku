@@ -59,7 +59,7 @@
     ・充電しながらの使用を推奨します
   </div>
 
-<script src="../js/config.js"></script>
+<script src="../js/config.js?v=7"></script>
 <script>
   const $  = (id) => document.getElementById(id);
   const sel = $("mikoshiSelect");
@@ -69,14 +69,21 @@
   if (!TOKEN){ TOKEN = "d-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
     localStorage.setItem("deviceToken", TOKEN); }
 
-  // 神輿リストを選択肢に反映
-  CONFIG.MIKOSHI.forEach(m => {
-    const o = document.createElement("option");
-    o.value = m.id; o.textContent = m.id + " ： " + m.name;
-    sel.appendChild(o);
-  });
-  const saved = localStorage.getItem("mikoshiId");
-  if (saved) sel.value = saved;
+  // 神輿リストを選択肢に反映（参加中のみ・表示順どおり／サーバーから取得）
+  async function buildOptions(){
+    const list = await loadRoster();          // 参加中のみ・順番どおり
+    const roster = (list && list.length) ? list : CONFIG.MIKOSHI.slice();
+    sel.innerHTML = "";
+    roster.forEach(m => {
+      const o = document.createElement("option");
+      o.value = m.id; o.textContent = m.id + " ： " + m.name;
+      sel.appendChild(o);
+    });
+    const saved = localStorage.getItem("mikoshiId");
+    if (saved && roster.some(m => m.id === saved)) sel.value = saved;
+    refreshTaken();
+  }
+  buildOptions();
 
   let watchId = null, timer = null, lastPos = null, wakeLock = null, takenTimer = null;
 
