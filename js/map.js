@@ -9,6 +9,30 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors"
 }).addTo(map);
 
+/* ===== トイレ（固定地点・タップで名称表示） ===== */
+function toiletIcon(){
+  const svg =
+    '<svg width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">'+
+    '<path d="M20 1 C10 1 2.5 8.5 2.5 18.5 C2.5 32 20 51 20 51 C20 51 37.5 32 37.5 18.5 C37.5 8.5 30 1 20 1 Z" fill="#1565c0" stroke="#ffffff" stroke-width="2.5"/>'+
+    '<circle cx="20" cy="18.5" r="12" fill="#ffffff"/>'+
+    '<circle cx="15" cy="12.4" r="1.9" fill="#1565c0"/>'+
+    '<rect x="12.9" y="14.4" width="4.2" height="5.2" rx="1.4" fill="#1565c0"/>'+
+    '<rect x="13.4" y="19" width="1.3" height="5" fill="#1565c0"/><rect x="15.3" y="19" width="1.3" height="5" fill="#1565c0"/>'+
+    '<rect x="19.6" y="9" width="0.8" height="18" rx="0.4" fill="#bbdefb"/>'+
+    '<circle cx="25" cy="12.4" r="1.9" fill="#1565c0"/>'+
+    '<path d="M25 14.4 L21.9 21.4 L28.1 21.4 Z" fill="#1565c0"/>'+
+    '<rect x="23.4" y="21.4" width="1.1" height="3.3" fill="#1565c0"/><rect x="25.5" y="21.4" width="1.1" height="3.3" fill="#1565c0"/>'+
+    '</svg>';
+  return L.divIcon({ className:"",
+    html:'<div style="filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))">'+svg+'</div>',
+    iconSize:[40,52], iconAnchor:[20,50], popupAnchor:[0,-46] });
+}
+(CONFIG.TOILETS || []).forEach(function(t){
+  L.marker([t.lat, t.lng], { icon: toiletIcon(), title: t.name })
+    .addTo(map)
+    .bindPopup('<div class="pop"><b>🚻 トイレ</b><div class="line">'+t.name+'</div></div>');
+});
+
 /* ---- 内部状態 ---- */
 const markers = {};                 // id -> Leaflet marker
 const state   = {};                 // id -> 最新データ
