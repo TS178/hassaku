@@ -92,7 +92,6 @@ function popupHtml(m, c){
   if (!c.known) return '<div class="pop"><b>' + m.name + "</b><div class='line'>まだ位置を受信していません</div></div>";
   const d = c.d;
   let html = '<div class="pop"><b>' + m.name + "</b>";
-  if (d.src === "manual") html += '<div class="line" style="color:#b05a00;font-weight:800;">📱 スマホ送信中（緊急）</div>';
   if (d.desc) html += '<div class="line" style="color:#5a4;">💬 ' + d.desc + "</div>";
   html += '<div class="line">現在地：' + d.lat.toFixed(5) + ", " + d.lng.toFixed(5) + "</div>" +
     '<div class="line">最終更新：' + clock(d.updated) + "（" + ago(c.sec) + "）</div>" +
