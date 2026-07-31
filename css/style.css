@@ -73,6 +73,15 @@ body{
   box-shadow:0 4px 14px rgba(0,0,0,.35);
 }
 
+/* 軌跡ON/OFFボタン（左下・PC/スマホ共通） */
+.track-toggle{
+  position:absolute; left:12px; bottom:14px; z-index:1200;
+  background:#fff; color:var(--ai); border:2px solid var(--ai);
+  border-radius:999px; padding:11px 18px; font-weight:800; font-size:14px; cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
+.track-toggle.on{ background:var(--ai); color:#fff; }
+
 /* ===== 地図アイコン（紋バッジ画像） ===== */
 .pin-img{ width:44px; height:44px; }
 .pin-img img{ width:44px; height:44px; object-fit:contain;
