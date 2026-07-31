@@ -1,38 +1,34 @@
 /* ============================================================
  *  設定ファイル（このファイルだけ編集すればOK）
- *  ・送信ページ / 閲覧ページの両方がここを読み込みます
+ *  ・閲覧ページ / 履歴ページ / 管理ページが読み込みます
+ *  ・GPSデータの取得は GAS が事業者APIから行います（このファイルには
+ *    APIのURL・認証は書きません。Code.gs に設定します）
  * ============================================================ */
 const CONFIG = {
 
   /* ① Google Apps Script のウェブアプリURL
    *    GAS をデプロイすると発行される「…/exec」で終わるURLを貼り付ける */
-  GAS_URL: "https://script.google.com/macros/s/AKfycbydLwSgrkduohAYUAKmUhgbBz41zYpYjstQaqKUskEvLyjh52TCuIXbWcaMrb4aBdPvEA/exec",
+  GAS_URL: "https://script.google.com/macros/s/AKfycbxpTZSQ2hVv5SOtGNWluJVNygX6CldBsuBhO_Gru-H-KaGOzaJe1zgaqJY37-1Ks2h0-g/exec",
 
-  /* ② 送信用の合言葉（GAS側 Code.gs の API_KEY と必ず同じ文字列にする） */
-  API_KEY: "Hassaku2026",
-
-  /* ③ 送信間隔（ミリ秒）… 1分 = 60000（GPS送信は1分ごと） */
-  SEND_INTERVAL: 60000,
-
-  /* ④ 地図の自動更新間隔（ミリ秒）… 30秒 = 30000（閲覧は30秒のまま） */
+  /* ② 地図の自動更新間隔（ミリ秒）… 30秒 = 30000 */
   REFRESH_INTERVAL: 30000,
 
-  /* ⑤ 通信断とみなす秒数（1分送信なので150秒＝約2.5回分で判定） */
-  OFFLINE_SEC: 150,
+  /* ③ 通信断とみなす秒数（5分＝300秒。この秒数以上更新がなければ「通信断」） */
+  OFFLINE_SEC: 300,
 
-  /* ⑤-2 「使用中」とみなす秒数（Code.gs の CLAIM_TIMEOUT_SEC と同じ値にする） */
-  CLAIM_SEC: 150,
-
-  /* ⑥ 地図の初期表示（祭り会場の中心の緯度・経度）とズーム倍率
+  /* ⑤ 地図の初期表示（祭り会場の中心の緯度・経度）とズーム倍率
    *    Googleマップで会場を右クリック →「緯度・経度」でコピーできます */
   MAP_CENTER: [37.144497, 136.732007],  // ← 会場に合わせて変更（例：京都駅付近）
   MAP_ZOOM: 15,
 
-  /* ⑦ 神輿の定義（14基）
-   *    id  … 端末が送る識別ID（重複しないこと）
+  /* ⑥ 神輿の定義（表示用）
+   *    id  … 自システム内の識別ID（Masterの「神輿ID」と一致させる）
    *    name… 表示名（自由に変更可）
-   *    color… 地図マーカーのリング色（一覧の枠にも使用）
-   *    icon … 地区紋の画像パス（img/フォルダ内） */
+   *    color… 地図マーカーのリング色（一覧・軌跡の色にも使用）
+   *    icon … 地区紋の画像パス（img/フォルダ内）
+   *  ※ どの端末(API)がどの神輿かは、スプレッドシートの Master シートの
+   *    「APIのID」列で対応づけます（毎年の変更もシート編集だけでOK）
+   *  ※ 参加/非参加・並び順も管理ページ（/admin/）から変更できます */
   MIKOSHI: [
     { id: "m01", name: "森之内（本社）", color: "#FFC400", icon: "img/m01.png?v=2" },
     { id: "m02", name: "富来領家町",     color: "#F57C00", icon: "img/m02.png?v=2" },
@@ -50,7 +46,7 @@ const CONFIG = {
     { id: "m14", name: "中浜",           color: "#EDEDED", icon: "img/m14.png?v=2" }
   ],
 
-  /* ⑧ トイレの場所（増やす場合はここに { name, lat, lng } の行を足すだけ） */
+  /* ⑦ トイレの場所（増やす場合はここに { name, lat, lng } の行を足すだけ） */
   TOILETS: [
     { name: "冨木八幡神社 社務所", lat: 37.152385944229074, lng: 136.73750267232603 },
     { name: "住吉神社 お手洗い",   lat: 37.13906994256999,  lng: 136.72721473095197 }
