@@ -91,18 +91,16 @@ function dirBtn(lat, lng){
 function popupHtml(m, c){
   if (!c.known) return '<div class="pop"><b>' + m.name + "</b><div class='line'>まだ位置を受信していません</div></div>";
   const d = c.d;
-  const spd = (d.speed === null || d.speed === undefined || isNaN(d.speed))
-      ? "取得不可"
-      : (Math.max(0, d.speed) * 3.6).toFixed(1) + " km/h";
-  return '<div class="pop">' +
-    "<b>" + m.name + "</b>" +
-    '<div class="line">現在地：' + d.lat.toFixed(5) + ", " + d.lng.toFixed(5) + "</div>" +
+  let html = '<div class="pop"><b>' + m.name + "</b>";
+  if (d.src === "manual") html += '<div class="line" style="color:#b05a00;font-weight:800;">📱 スマホ送信中（緊急）</div>';
+  if (d.desc) html += '<div class="line" style="color:#5a4;">💬 ' + d.desc + "</div>";
+  html += '<div class="line">現在地：' + d.lat.toFixed(5) + ", " + d.lng.toFixed(5) + "</div>" +
     '<div class="line">最終更新：' + clock(d.updated) + "（" + ago(c.sec) + "）</div>" +
-    '<div class="line">速度：' + spd + "</div>" +
     '<div class="line">状態：<span class="' + (c.offline ? "state-off" : "state-ok") + '">' +
-        (c.offline ? "⚠ 通信断" : "正常") + "</span></div>" +
-    dirBtn(d.lat, d.lng) +
-    "</div>";
+        (c.offline ? "⚠ 通信断" : "正常") + "</span></div>";
+  if (d.link) html += '<div class="line"><a href="' + d.link + '" target="_blank" rel="noopener">🔗 関連リンク</a></div>';
+  html += dirBtn(d.lat, d.lng) + "</div>";
+  return html;
 }
 
 /* 地図マーカーを更新 */
@@ -204,8 +202,44 @@ function banner(show, msg){
   b.classList.toggle("show", !!show);
 }
 
+/* ---- 軌跡（本日の移動の跡）ON/OFF ---- */
+let trackOn = false;
+let trackLines = {};   // id -> polyline
+
+function clearTracks(){
+  Object.values(trackLines).forEach(l => map.removeLayer(l));
+  trackLines = {};
+}
+async function drawTracks(){
+  if (!trackOn) return;
+  try{
+    const url = CONFIG.GAS_URL + (CONFIG.GAS_URL.includes("?") ? "&" : "?") + "type=track&_=" + Date.now();
+    const j = await (await fetch(url)).json();
+    const activeIds = new Set(ROSTER.map(m => m.id));
+    const grouped = {};
+    (j.points || []).forEach(p => {
+      const id = p[0]; if (!activeIds.has(id)) return;
+      (grouped[id] = grouped[id] || []).push([p[1], p[2]]);
+    });
+    clearTracks();
+    ROSTER.forEach(m => {
+      const pts = grouped[m.id];
+      if (!pts || pts.length < 2) return;
+      trackLines[m.id] = L.polyline(pts, { color: m.color, weight: 4, opacity: 0.6 }).addTo(map);
+    });
+  }catch(e){ /* 取得失敗時は何もしない */ }
+}
+function toggleTrack(){
+  trackOn = !trackOn;
+  const btn = document.getElementById("trackToggle");
+  btn.textContent = trackOn ? "🧭 軌跡 ON" : "🧭 軌跡 OFF";
+  btn.classList.toggle("on", trackOn);
+  if (trackOn) drawTracks(); else clearTracks();
+}
+
 /* ---- UIイベント ---- */
 document.getElementById("search").addEventListener("input", updateList);
+document.getElementById("trackToggle").addEventListener("click", toggleTrack);
 document.getElementById("panelToggle").addEventListener("click", () => {
   const p = document.getElementById("panel");
   const open = p.classList.toggle("open");
@@ -215,7 +249,7 @@ setInterval(() => { document.getElementById("clock").textContent = clock(Date.no
 
 /* 30秒ごとに更新（経過時間表示は5秒ごとに再計算） */
 fetchData();
-setInterval(fetchData, CONFIG.REFRESH_INTERVAL);
+setInterval(() => { fetchData(); if (trackOn) drawTracks(); }, CONFIG.REFRESH_INTERVAL);
 setInterval(() => { updateMarkers(); updateList(); }, 5000);
 
 /* 参加・表示順を読み込む（起動時＋5分ごと） */
