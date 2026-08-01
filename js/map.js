@@ -201,41 +201,6 @@ function banner(show, msg){
   b.classList.toggle("show", !!show);
 }
 
-/* ---- 軌跡（本日の移動の跡）ON/OFF ---- */
-let trackOn = false;
-let trackLines = {};   // id -> polyline
-
-function clearTracks(){
-  Object.values(trackLines).forEach(l => map.removeLayer(l));
-  trackLines = {};
-}
-async function drawTracks(){
-  if (!trackOn) return;
-  try{
-    const url = CONFIG.GAS_URL + (CONFIG.GAS_URL.includes("?") ? "&" : "?") + "type=track&_=" + Date.now();
-    const j = await (await fetch(url)).json();
-    const activeIds = new Set(ROSTER.map(m => m.id));
-    const grouped = {};
-    (j.points || []).forEach(p => {
-      const id = p[0]; if (!activeIds.has(id)) return;
-      (grouped[id] = grouped[id] || []).push([p[1], p[2]]);
-    });
-    clearTracks();
-    ROSTER.forEach(m => {
-      const pts = grouped[m.id];
-      if (!pts || pts.length < 2) return;
-      trackLines[m.id] = L.polyline(pts, { color: m.color, weight: 4, opacity: 0.6 }).addTo(map);
-    });
-  }catch(e){ /* 取得失敗時は何もしない */ }
-}
-function toggleTrack(){
-  trackOn = !trackOn;
-  const btn = document.getElementById("trackToggle");
-  btn.textContent = trackOn ? "🧭 軌跡 ON" : "🧭 軌跡 OFF";
-  btn.classList.toggle("on", trackOn);
-  if (trackOn) drawTracks(); else clearTracks();
-}
-
 /* ---- UIイベント ---- */
 document.getElementById("search").addEventListener("input", updateList);
 document.getElementById("trackToggle").addEventListener("click", toggleTrack);
