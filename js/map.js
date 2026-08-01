@@ -244,10 +244,10 @@ async function fetchData(){
 
     lastServerTime = json.server || Date.now();
 
-    const newDataIds = [];
+    const rippleTargets = [];
     json.mikoshi.forEach(d => {
       const prev = movement[d.id];
-      const isNew = !prev || prev.updated !== d.updated;
+      const wasMoving = prev ? prev.moving : false;
 
       if (prev && prev.updated !== d.updated){
         const dist = haversine(prev, d);
@@ -263,13 +263,17 @@ async function fetchData(){
       }
       // updatedが同じ（変化なし）→ movementはそのまま維持
 
+      // 停止→移動に変わった瞬間だけ波紋
+      if (!wasMoving && movement[d.id] && movement[d.id].moving){
+        rippleTargets.push(d.id);
+      }
+
       state[d.id] = d;
-      if (isNew) newDataIds.push(d.id);
     });
 
     updateMarkers();
     updateList();
-    newDataIds.forEach(id => rippleMarker(id));   // 新データのみ波紋
+    rippleTargets.forEach(id => rippleMarker(id));   // 動き出した神輿だけ波紋
 
     document.getElementById("foot").textContent = "最終取得：" + clock(Date.now());
     banner(false);
