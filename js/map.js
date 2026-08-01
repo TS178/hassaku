@@ -34,25 +34,41 @@ function toiletIcon(){
 });
 
 /* ---- 内部状態 ---- */
-const markers = {};                 // id -> Leaflet marker
-const state   = {};                 // id -> 最新データ
-let lastServerTime = 0;             // サーバー時刻（通信断判定の基準）
-let ROSTER = CONFIG.MIKOSHI.slice(); // 参加・表示順（読み込むまでは全基）
+const markers = {};                  // id -> Leaflet marker
+const state   = {};                  // id -> 最新データ
+const movement = {};                 // id -> {lat,lng,updated,moving,arrow,dirText}
+let lastServerTime = 0;
+let ROSTER = CONFIG.MIKOSHI.slice();
 
-const numOf = (id) => (id.match(/\d+/) ? String(Number(id.match(/\d+/)[0])) : id);
+/* ---- 距離(Haversine)・方位 ---- */
+function haversine(a, b){
+  const R = 6371000, toR = x => x * Math.PI / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const s = Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+function bearing(a, b){
+  const toR = x => x*Math.PI/180, toD = x => x*180/Math.PI;
+  const y = Math.sin(toR(b.lng-a.lng)) * Math.cos(toR(b.lat));
+  const x = Math.cos(toR(a.lat))*Math.sin(toR(b.lat)) - Math.sin(toR(a.lat))*Math.cos(toR(b.lat))*Math.cos(toR(b.lng-a.lng));
+  return (toD(Math.atan2(y, x)) + 360) % 360;
+}
+function dir8(deg){
+  const dirs = [["↑","北"],["↗","北東"],["→","東"],["↘","南東"],["↓","南"],["↙","南西"],["←","西"],["↖","北西"]];
+  const d = dirs[Math.round(deg/45) % 8];
+  return { arrow:d[0], text:d[1] };
+}
+const MOVE_THRESHOLD_M = 20;   // 20m以上で「移動中」
 
 /* 神輿アイコンを作る（紋バッジ画像。通信断は灰色化） */
 function makeIcon(m, offline){
   const src = m.icon || "";
   const cls = "pin-img" + (offline ? " off" : "");
   const html = '<div class="' + cls + '"><img src="' + src + '" alt="' + m.name + '"></div>';
-  return L.divIcon({
-    className: "", html: html,
-    iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -22]
-  });
+  return L.divIcon({ className: "", html: html,
+    iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -22] });
 }
 
-/* 秒数を「◯秒前 / ◯分前」に整形 */
 function ago(sec){
   if (sec < 60) return Math.floor(sec) + "秒前";
   if (sec < 3600) return Math.floor(sec / 60) + "分前";
@@ -71,15 +87,17 @@ function calc(m){
   const base = lastServerTime || Date.now();
   const sec  = (base - d.updated) / 1000;
   const offline = sec > CONFIG.OFFLINE_SEC;
-  return {
-    known:true, offline, sec,
-    statusText: offline ? "通信断" : "正常",
-    cls: offline ? "off" : "ok",
-    d
-  };
+  return { known:true, offline, sec, statusText: offline ? "通信断" : "正常", cls: offline ? "off" : "ok", d };
 }
 
-/* Googleマップ経路ボタン（無料のURLスキーム／APIキー不要） */
+/* 移動情報の取得（表示用） */
+function moveInfo(id){
+  const mv = movement[id];
+  if (!mv) return null;
+  return { moving: mv.moving, arrow: mv.arrow || "", dirText: mv.dirText || "" };
+}
+
+/* Googleマップ経路ボタン */
 function dirBtn(lat, lng){
   return '<a href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '" ' +
     'target="_blank" rel="noopener" ' +
@@ -93,25 +111,52 @@ function popupHtml(m, c){
   const d = c.d;
   let html = '<div class="pop"><b>' + m.name + "</b>";
   if (d.desc) html += '<div class="line" style="color:#5a4;">💬 ' + d.desc + "</div>";
-  html += '<div class="line">現在地：' + d.lat.toFixed(5) + ", " + d.lng.toFixed(5) + "</div>" +
-    '<div class="line">最終更新：' + clock(d.updated) + "（" + ago(c.sec) + "）</div>" +
-    '<div class="line">状態：<span class="' + (c.offline ? "state-off" : "state-ok") + '">' +
-        (c.offline ? "⚠ 通信断" : "正常") + "</span></div>";
+  html += '<div class="line">最終更新：' + clock(d.updated) + "（" + ago(c.sec) + "）</div>";
+  if (c.offline){
+    html += '<div class="line">状態：<span class="state-off">⚠ 通信断</span></div>';
+  } else {
+    const mi = moveInfo(m.id);
+    if (mi){
+      html += '<div class="line">状態：' + (mi.moving ? "👣 移動中" : "⏸ 停止中") + "</div>";
+      if (mi.moving && mi.dirText) html += '<div class="line">進行方向：' + mi.arrow + " " + mi.dirText + "</div>";
+    } else {
+      html += '<div class="line">状態：<span class="state-ok">正常</span></div>';
+    }
+  }
+  html += '<div class="line">現在地：' + d.lat.toFixed(5) + ", " + d.lng.toFixed(5) + "</div>";
   if (d.link) html += '<div class="line"><a href="' + d.link + '" target="_blank" rel="noopener">🔗 関連リンク</a></div>';
   html += dirBtn(d.lat, d.lng) + "</div>";
   return html;
 }
 
+/* 波紋アニメーション（新データ受信時。リング色を流用） */
+function rippleMarker(id){
+  const mk = markers[id]; if (!mk) return;
+  const el = mk.getElement(); if (!el) return;
+  const m = ROSTER.find(x => x.id === id) || CONFIG.MIKOSHI.find(x => x.id === id);
+  const color = m ? m.color : "#888";
+  const box = document.createElement("div");
+  box.className = "ripple-box";
+  for (let i = 0; i < 3; i++){
+    const r = document.createElement("span");
+    r.className = "ripple-ring";
+    r.style.borderColor = color;
+    r.style.animationDelay = (i * 0.7) + "s";
+    box.appendChild(r);
+  }
+  el.appendChild(box);
+  setTimeout(function(){ if (box.parentNode) box.parentNode.removeChild(box); }, 3000);
+}
+
 /* 地図マーカーを更新 */
 function updateMarkers(){
   const activeIds = new Set(ROSTER.map(m => m.id));
-  // 参加から外れた神輿のマーカーを消す
   Object.keys(markers).forEach(id => {
     if (!activeIds.has(id)){ map.removeLayer(markers[id]); delete markers[id]; }
   });
   ROSTER.forEach(m => {
     const c = calc(m);
-    if (!c.known){                       // 未受信は地図に出さない
+    if (!c.known){
       if (markers[m.id]){ map.removeLayer(markers[m.id]); delete markers[m.id]; }
       return;
     }
@@ -119,9 +164,13 @@ function updateMarkers(){
     if (!markers[m.id]){
       markers[m.id] = L.marker(pos, { icon: makeIcon(m, c.offline) }).addTo(map);
       markers[m.id].bindPopup(popupHtml(m, c), { autoPan: false });
+      markers[m.id]._off = c.offline;
     } else {
       markers[m.id].setLatLng(pos);
-      markers[m.id].setIcon(makeIcon(m, c.offline));
+      if (markers[m.id]._off !== c.offline){   // 通信断状態が変わったときだけアイコン再生成
+        markers[m.id].setIcon(makeIcon(m, c.offline));
+        markers[m.id]._off = c.offline;
+      }
       markers[m.id].setPopupContent(popupHtml(m, c));
     }
   });
@@ -141,6 +190,17 @@ function updateList(){
     const hit = (m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
     if (q && !hit) return;
 
+    // 移動中／停止中・進行方向（通信中のみ）
+    let moveLine = "";
+    if (c.known && !c.offline){
+      const mi = moveInfo(m.id);
+      if (mi){
+        moveLine = mi.moving
+          ? '<div class="row-move">👣 ' + (mi.arrow ? mi.arrow + " " + mi.dirText + "へ移動中" : "移動中") + "</div>"
+          : '<div class="row-move stop">⏸ 停止中</div>';
+      }
+    }
+
     const li = document.createElement("li");
     li.className = "row";
     li.innerHTML =
@@ -149,6 +209,7 @@ function updateList(){
       "</div>" +
       '<div class="row-main">' +
         '<div class="row-name">' + m.name + "</div>" +
+        moveLine +
         '<div class="row-sub">' + (c.known ? "更新 " + ago(c.sec) : "位置情報なし") + "</div>" +
       "</div>" +
       '<div class="badge ' + c.cls + '">' + c.statusText + "</div>";
@@ -182,15 +243,39 @@ async function fetchData(){
     if (!json.ok) throw new Error("server");
 
     lastServerTime = json.server || Date.now();
-    json.mikoshi.forEach(d => { state[d.id] = d; });
+
+    const newDataIds = [];
+    json.mikoshi.forEach(d => {
+      const prev = movement[d.id];
+      const isNew = !prev || prev.updated !== d.updated;
+
+      if (prev && prev.updated !== d.updated){
+        const dist = haversine(prev, d);
+        if (dist >= MOVE_THRESHOLD_M){
+          const b = dir8(bearing(prev, d));
+          movement[d.id] = { lat:d.lat, lng:d.lng, updated:d.updated, moving:true, arrow:b.arrow, dirText:b.text };
+        } else {
+          // 20m未満：停止中。方向は前回を据え置き（ちらつき防止）
+          movement[d.id] = { lat:d.lat, lng:d.lng, updated:d.updated, moving:false, arrow:prev.arrow||"", dirText:prev.dirText||"" };
+        }
+      } else if (!prev){
+        movement[d.id] = { lat:d.lat, lng:d.lng, updated:d.updated, moving:false, arrow:"", dirText:"" };
+      }
+      // updatedが同じ（変化なし）→ movementはそのまま維持
+
+      state[d.id] = d;
+      if (isNew) newDataIds.push(d.id);
+    });
 
     updateMarkers();
     updateList();
+    newDataIds.forEach(id => rippleMarker(id));   // 新データのみ波紋
+
     document.getElementById("foot").textContent = "最終取得：" + clock(Date.now());
     banner(false);
   }catch(e){
     banner(true, "サーバーに接続できません（自動で再試行します）");
-    updateList();   // 経過時間や通信断表示は更新
+    updateList();
   }
 }
 
@@ -212,6 +297,7 @@ setInterval(() => { document.getElementById("clock").textContent = clock(Date.no
 
 /* 30秒ごとに更新（経過時間表示は5秒ごとに再計算） */
 fetchData();
+setInterval(fetchData, CONFIG.REFRESH_INTERVAL);
 setInterval(() => { updateMarkers(); updateList(); }, 5000);
 
 /* 参加・表示順を読み込む（起動時＋5分ごと） */
