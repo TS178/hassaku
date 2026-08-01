@@ -73,20 +73,27 @@ body{
   box-shadow:0 4px 14px rgba(0,0,0,.35);
 }
 
-/* 軌跡ON/OFFボタン（左下・PC/スマホ共通） */
-.track-toggle{
-  position:absolute; left:12px; bottom:14px; z-index:1200;
-  background:#fff; color:var(--ai); border:2px solid var(--ai);
-  border-radius:999px; padding:11px 18px; font-weight:800; font-size:14px; cursor:pointer;
-  box-shadow:0 4px 12px rgba(0,0,0,.25);
-}
-.track-toggle.on{ background:var(--ai); color:#fff; }
-
 /* ===== 地図アイコン（紋バッジ画像） ===== */
-.pin-img{ width:44px; height:44px; }
+.pin-img{ width:44px; height:44px; position:relative; }
 .pin-img img{ width:44px; height:44px; object-fit:contain;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
 .pin-img.off img{ filter:grayscale(1) opacity(.55) drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+
+/* 波紋アニメーション（更新時。リング色は inline で神輿の色を指定） */
+.ripple-box{ position:absolute; left:22px; top:22px; width:0; height:0; pointer-events:none; z-index:-1; }
+.ripple-ring{
+  position:absolute; left:0; top:0; width:40px; height:40px; margin:-20px 0 0 -20px;
+  border-radius:50%; border:3px solid; opacity:0;
+  animation:mikoshiRipple 1.4s ease-out forwards;
+}
+@keyframes mikoshiRipple{
+  0%{ transform:scale(0.7); opacity:.85; }
+  100%{ transform:scale(2.9); opacity:0; }
+}
+
+/* 一覧：移動中／停止中の行 */
+.row-move{ font-size:12px; font-weight:800; color:#333; margin-top:2px; }
+.row-move.stop{ color:#8a8375; font-weight:700; }
 
 /* ポップアップ */
 .pop b{ font-size:15px; }
