@@ -203,7 +203,6 @@ function banner(show, msg){
 
 /* ---- UIイベント ---- */
 document.getElementById("search").addEventListener("input", updateList);
-document.getElementById("trackToggle").addEventListener("click", toggleTrack);
 document.getElementById("panelToggle").addEventListener("click", () => {
   const p = document.getElementById("panel");
   const open = p.classList.toggle("open");
@@ -213,7 +212,6 @@ setInterval(() => { document.getElementById("clock").textContent = clock(Date.no
 
 /* 30秒ごとに更新（経過時間表示は5秒ごとに再計算） */
 fetchData();
-setInterval(() => { fetchData(); if (trackOn) drawTracks(); }, CONFIG.REFRESH_INTERVAL);
 setInterval(() => { updateMarkers(); updateList(); }, 5000);
 
 /* 参加・表示順を読み込む（起動時＋5分ごと） */
