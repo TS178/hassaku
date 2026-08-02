@@ -108,6 +108,34 @@ body{
 .locate-btn.on{ background:var(--ai); color:#fff; }
 .locate-btn.loading{ opacity:.6; }
 
+/* ===== 地図レイヤー切替（現在地ボタンの下・Googleマップ風） ===== */
+.layer-btn{
+  position:absolute; left:12px; top:150px; z-index:1200;
+  width:46px; height:46px; border-radius:14px;
+  background:#fff; color:var(--ai); border:2px solid var(--ai);
+  font-size:20px; line-height:1; cursor:pointer;
+  box-shadow:0 3px 10px rgba(0,0,0,.28);
+  display:flex; align-items:center; justify-content:center;
+}
+.layer-btn.on{ background:var(--ai); color:#fff; }
+.layer-panel{
+  position:absolute; left:66px; top:150px; z-index:1300;
+  background:#fff; border:1px solid var(--line); border-radius:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.28); overflow:hidden;
+  display:none; min-width:168px;
+}
+.layer-panel.open{ display:block; }
+.layer-opt{
+  display:flex; align-items:center; gap:8px; width:100%;
+  padding:14px 16px; border:none; background:#fff; cursor:pointer;
+  font-size:15px; font-weight:700; color:var(--ink); text-align:left;
+  border-bottom:1px solid #eee;
+}
+.layer-opt:last-child{ border-bottom:none; }
+.layer-opt .chk{ width:16px; color:var(--shu); font-weight:900; }
+.layer-opt.sel{ background:#f3f6fb; color:var(--ai); }
+.layer-opt:active{ background:#e9eef6; }
+
 /* 中心の青いドット（白フチ・影）。家紋も色も無い＝神輿と混同しない */
 .me-dot{
   width:16px; height:16px; border-radius:50%; box-sizing:border-box;
