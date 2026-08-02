@@ -95,6 +95,32 @@ body{
 .row-move{ font-size:12px; font-weight:800; color:#333; margin-top:2px; }
 .row-move.stop{ color:#8a8375; font-weight:700; }
 
+/* ===== 現在地（この端末の画面だけ） ===== */
+/* ボタン：左上・縮尺(＋/−)の下、アイコンのみ・和のトンマナ（白地に藍） */
+.locate-btn{
+  position:absolute; left:12px; top:96px; z-index:1200;
+  width:46px; height:46px; border-radius:50%;
+  background:#fff; color:var(--ai); border:2px solid var(--ai);
+  font-size:20px; line-height:1; cursor:pointer;
+  box-shadow:0 3px 10px rgba(0,0,0,.28);
+  display:flex; align-items:center; justify-content:center;
+}
+.locate-btn.on{ background:var(--ai); color:#fff; }
+.locate-btn.loading{ opacity:.6; }
+
+/* 中心の青いドット（白フチ・影）。家紋も色も無い＝神輿と混同しない */
+.me-dot{
+  width:16px; height:16px; border-radius:50%; box-sizing:border-box;
+  background:#1a73e8; border:3px solid #fff;
+  box-shadow:0 0 4px rgba(0,0,0,.4);
+}
+/* 精度円：半透明の青が、ゆっくり脈打つ */
+.me-acc{ animation:mePulse 2.6s ease-in-out infinite; transform-origin:center; }
+@keyframes mePulse{
+  0%,100%{ opacity:.10; }
+  50%{ opacity:.28; }
+}
+
 /* ポップアップ */
 .pop b{ font-size:15px; }
 .pop .line{ font-size:13px; margin-top:3px; }
