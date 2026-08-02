@@ -297,6 +297,41 @@ document.getElementById("panelToggle").addEventListener("click", () => {
   const open = p.classList.toggle("open");
   document.getElementById("panelToggle").textContent = open ? "🔍 神輿検索 ▼" : "🔍 神輿検索 ▲";
 });
+
+/* ---- 現在地（この端末の画面だけ。サーバーには送らない） ---- */
+let meMarker = null, meCircle = null, meWatch = null, meFirst = true;
+
+function meIcon(){
+  return L.divIcon({ className:"",
+    html:'<div class="me-dot"></div>',
+    iconSize:[16,16], iconAnchor:[8,8] });
+}
+function locateMe(){
+  if (!("geolocation" in navigator)){ banner(true, "この端末は位置情報に対応していません"); return; }
+  const btn = document.getElementById("locateBtn");
+  btn.classList.add("loading");
+  // すでに追従中なら、自分の位置へ寄せ直すだけ
+  if (meMarker){ map.setView(meMarker.getLatLng(), Math.max(map.getZoom(), 16)); btn.classList.remove("loading"); return; }
+  meWatch = navigator.geolocation.watchPosition(
+    p => {
+      btn.classList.remove("loading"); btn.classList.add("on");
+      const ll = [p.coords.latitude, p.coords.longitude];
+      const acc = p.coords.accuracy || 30;
+      if (!meMarker){
+        meMarker = L.marker(ll, { icon: meIcon(), interactive:false, zIndexOffset:9999 }).addTo(map);
+        meCircle = L.circle(ll, { radius: acc, className:"me-acc", stroke:false, fillColor:"#1a73e8", fillOpacity:0.15 }).addTo(map);
+      } else {
+        meMarker.setLatLng(ll); meCircle.setLatLng(ll); meCircle.setRadius(acc);
+      }
+      if (meFirst){ map.setView(ll, Math.max(map.getZoom(), 16)); meFirst = false; }
+    },
+    err => { btn.classList.remove("loading"); banner(true, "現在地を取得できません（位置情報を許可してください）");
+             setTimeout(()=>banner(false), 4000); },
+    { enableHighAccuracy:true, maximumAge:5000, timeout:20000 }
+  );
+}
+document.getElementById("locateBtn").addEventListener("click", locateMe);
+
 setInterval(() => { document.getElementById("clock").textContent = clock(Date.now()); }, 1000);
 
 /* 30秒ごとに更新（経過時間表示は5秒ごとに再計算） */
