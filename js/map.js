@@ -3,11 +3,27 @@
  * ============================================================ */
 
 /* ---- 地図の初期化 ---- */
-const map = L.map("map").setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: "&copy; OpenStreetMap contributors"
-}).addTo(map);
+const map = L.map("map", { zoomControl: true }).setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
+
+/* ベースマップ（標準地図＝OpenStreetMap／航空写真＝国土地理院シームレス空中写真） */
+const baseLayers = {
+  std: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap contributors"
+  }),
+  photo: L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg", {
+    maxZoom: 18, attribution: "地理院タイル（シームレス空中写真）"
+  })
+};
+let currentBase = "std";
+baseLayers.std.addTo(map);   // 初期表示は標準地図（航空写真は選択時に読み込む）
+
+function switchBase(key){
+  if (key === currentBase) return;
+  map.removeLayer(baseLayers[currentBase]);
+  baseLayers[key].addTo(map);      // 航空写真はここで初めて読み込まれる
+  baseLayers[key].bringToBack();   // 神輿・現在地マーカーの下へ
+  currentBase = key;
+}
 
 /* ===== トイレ（固定地点・タップで名称表示） ===== */
 function toiletIcon(){
@@ -331,6 +347,40 @@ function locateMe(){
   );
 }
 document.getElementById("locateBtn").addEventListener("click", locateMe);
+
+/* ---- 地図レイヤー切替（Googleマップ風・小ボタンから開閉） ---- */
+(function(){
+  const btn   = document.getElementById("layerBtn");
+  const panel = document.getElementById("layerPanel");
+  if (!btn || !panel) return;
+
+  function renderChecks(){
+    panel.querySelectorAll(".layer-opt").forEach(function(op){
+      const on = op.dataset.base === currentBase;
+      op.classList.toggle("sel", on);
+      op.querySelector(".chk").textContent = on ? "✓" : "";
+    });
+  }
+  function openPanel(o){ panel.classList.toggle("open", o); btn.classList.toggle("on", o); }
+
+  btn.addEventListener("click", function(e){
+    e.stopPropagation();
+    openPanel(!panel.classList.contains("open"));
+    renderChecks();
+  });
+  panel.querySelectorAll(".layer-opt").forEach(function(op){
+    op.addEventListener("click", function(e){
+      e.stopPropagation();
+      switchBase(op.dataset.base);
+      renderChecks();
+      openPanel(false);   // 選んだら閉じる（誤タップ防止・片手操作）
+    });
+  });
+  // 地図など他をタップしたら閉じる
+  map.on("click", function(){ openPanel(false); });
+  document.addEventListener("click", function(){ openPanel(false); });
+  renderChecks();
+})();
 
 setInterval(() => { document.getElementById("clock").textContent = clock(Date.now()); }, 1000);
 
