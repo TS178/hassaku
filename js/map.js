@@ -128,16 +128,10 @@ function popupHtml(m, c){
   let html = '<div class="pop"><b>' + m.name + "</b>";
   if (d.desc) html += '<div class="line" style="color:#5a4;">💬 ' + d.desc + "</div>";
   html += '<div class="line">最終更新：' + clock(d.updated) + "（" + ago(c.sec) + "）</div>";
-  if (c.offline){
-    html += '<div class="line">状態：<span class="state-off">⚠ 通信断</span></div>';
-  } else {
-    const mi = moveInfo(m.id);
-    if (mi){
-      html += '<div class="line">状態：' + (mi.moving ? "👣 移動中" : "⏸ 停止中") + "</div>";
-      if (mi.moving && mi.dirText) html += '<div class="line">進行方向：' + mi.arrow + " " + mi.dirText + "</div>";
-    } else {
-      html += '<div class="line">状態：<span class="state-ok">正常</span></div>';
-    }
+  const mi = (!c.offline) ? moveInfo(m.id) : null;
+  if (mi){
+    html += '<div class="line">状態：' + (mi.moving ? "👣 移動中" : "⏸ 停止中") + "</div>";
+    if (mi.moving && mi.dirText) html += '<div class="line">進行方向：' + mi.arrow + " " + mi.dirText + "</div>";
   }
   html += '<div class="line">現在地：' + d.lat.toFixed(5) + ", " + d.lng.toFixed(5) + "</div>";
   if (d.link) html += '<div class="line"><a href="' + d.link + '" target="_blank" rel="noopener">🔗 関連リンク</a></div>';
@@ -197,11 +191,9 @@ function updateList(){
   const q = document.getElementById("search").value.trim().toLowerCase();
   const ul = document.getElementById("list");
   ul.innerHTML = "";
-  let nOk = 0, nOff = 0, nNon = 0;
 
   ROSTER.forEach(m => {
     const c = calc(m);
-    if (!c.known) nNon++; else if (c.offline) nOff++; else nOk++;
 
     const hit = (m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
     if (q && !hit) return;
@@ -227,14 +219,10 @@ function updateList(){
         '<div class="row-name">' + m.name + "</div>" +
         moveLine +
         '<div class="row-sub">' + (c.known ? "更新 " + ago(c.sec) : "位置情報なし") + "</div>" +
-      "</div>" +
-      '<div class="badge ' + c.cls + '">' + c.statusText + "</div>";
+      "</div>";
     li.onclick = () => focusMikoshi(m.id);
     ul.appendChild(li);
   });
-
-  document.getElementById("counts").textContent =
-    "受信 " + nOk + " ／ 通信断 " + nOff + " ／ 未受信 " + nNon;
 }
 
 /* 指定神輿へ地図を移動しポップアップを開く */
@@ -347,6 +335,18 @@ function locateMe(){
   );
 }
 document.getElementById("locateBtn").addEventListener("click", locateMe);
+
+/* ---- 注意書き（ⓘ）ボタン ---- */
+(function(){
+  const ib = document.getElementById("infoBtn");
+  const bubble = document.getElementById("infoBubble");
+  if (!ib || !bubble) return;
+  function openInfo(o){ bubble.classList.toggle("open", o); ib.classList.toggle("on", o); }
+  ib.addEventListener("click", function(e){ e.stopPropagation(); openInfo(!bubble.classList.contains("open")); });
+  bubble.addEventListener("click", function(e){ e.stopPropagation(); });
+  map.on("click", function(){ openInfo(false); });
+  document.addEventListener("click", function(){ openInfo(false); });
+})();
 
 /* ---- 地図レイヤー切替（Googleマップ風・小ボタンから開閉） ---- */
 (function(){
