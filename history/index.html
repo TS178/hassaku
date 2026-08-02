@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>冨木八朔祭礼 運行記録（過去のルート）</title>
+<title>神輿 運行記録（過去のルート）</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root{ --ai:#1b2f52; --shu:#d7402b; --paper:#f7f3ea; --line:#e4ddcd; --ink:#20242b; }
@@ -48,11 +48,28 @@
     box-shadow:0 1px 4px rgba(0,0,0,.5); }
   .mk img{ width:100%;height:100%;object-fit:contain; }
   .leaflet-popup-content{ font-size:13px; }
+
+  /* 地図レイヤー切替（左上・縮尺の下） */
+  .layer-btn{ position:absolute; left:10px; top:78px; z-index:1100;
+    width:42px; height:42px; border-radius:12px; background:#fff; color:var(--ai);
+    border:2px solid var(--ai); font-size:19px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.28); }
+  .layer-btn.on{ background:var(--ai); color:#fff; }
+  .layer-panel{ position:absolute; left:60px; top:78px; z-index:1200; background:#fff;
+    border:1px solid var(--line); border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.28);
+    overflow:hidden; display:none; min-width:160px; }
+  .layer-panel.open{ display:block; }
+  .layer-opt{ display:flex; align-items:center; gap:8px; width:100%; padding:13px 15px; border:none;
+    background:#fff; cursor:pointer; font-size:15px; font-weight:700; color:var(--ink); text-align:left;
+    border-bottom:1px solid #eee; }
+  .layer-opt:last-child{ border-bottom:none; }
+  .layer-opt .chk{ width:16px; color:var(--shu); font-weight:900; }
+  .layer-opt.sel{ background:#f3f6fb; color:var(--ai); }
 </style>
 </head>
 <body>
   <div class="topbar">
-    <span class="title">🗺 冨木八朔祭礼 運行記録</span>
+    <span class="title">🗺 神輿 運行記録</span>
     <label>年度</label><select id="yearSel"></select>
     <label>神輿</label><select id="mikoshiSel"><option value="">すべて</option></select>
     <button class="btn" id="playBtn">▶ 再生</button>
@@ -73,6 +90,11 @@
     <div class="msg" id="msg">読み込み中…</div>
     <button class="statsBtn" id="statsBtn">📊 集計</button>
     <div class="stats" id="stats"><h3>神輿ごとの運行集計</h3><div id="statsBody"></div></div>
+    <button class="layer-btn" id="layerBtn" aria-label="地図の種類を切り替え">🗺️</button>
+    <div class="layer-panel" id="layerPanel">
+      <button class="layer-opt sel" data-base="std"><span class="chk">✓</span>標準地図</button>
+      <button class="layer-opt" data-base="photo"><span class="chk"></span>航空写真</button>
+    </div>
   </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -80,8 +102,20 @@
 <script>
   const $=(id)=>document.getElementById(id);
   const map=L.map("map").setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,
-    attribution:"&copy; OpenStreetMap contributors"}).addTo(map);
+  const baseLayers={
+    std:L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}),
+    photo:L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg",{maxZoom:18,attribution:"地理院タイル（シームレス空中写真）"})
+  };
+  let currentBase="std"; baseLayers.std.addTo(map);
+  function switchBase(k){ if(k===currentBase) return; map.removeLayer(baseLayers[currentBase]); baseLayers[k].addTo(map); baseLayers[k].bringToBack(); currentBase=k; }
+  (function(){
+    const btn=$("layerBtn"), panel=$("layerPanel"); if(!btn||!panel) return;
+    function checks(){ panel.querySelectorAll(".layer-opt").forEach(function(op){ const on=op.dataset.base===currentBase; op.classList.toggle("sel",on); op.querySelector(".chk").textContent=on?"✓":""; }); }
+    function open(o){ panel.classList.toggle("open",o); btn.classList.toggle("on",o); }
+    btn.addEventListener("click",function(e){ e.stopPropagation(); open(!panel.classList.contains("open")); checks(); });
+    panel.querySelectorAll(".layer-opt").forEach(function(op){ op.addEventListener("click",function(e){ e.stopPropagation(); switchBase(op.dataset.base); checks(); open(false); }); });
+    map.on("click",function(){ open(false); }); document.addEventListener("click",function(){ open(false); }); checks();
+  })();
 
   const colorOf=(id)=>{ const m=CONFIG.MIKOSHI.find(x=>x.id===id); return m?m.color:"#3366cc"; };
   const nameOf =(id)=>{ const m=CONFIG.MIKOSHI.find(x=>x.id===id); return m?m.name:id; };
