@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>神輿 運行記録（過去のルート）</title>
+<title>冨木八朔祭礼 運行記録（過去のルート）</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root{ --ai:#1b2f52; --shu:#d7402b; --paper:#f7f3ea; --line:#e4ddcd; --ink:#20242b; }
   *{ box-sizing:border-box; }
   html,body{ margin:0; height:100%; }
   body{ font-family:system-ui,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; color:var(--ink);
-    background:var(--paper); overflow:hidden; }
+    background:var(--paper); overflow:hidden; display:flex; flex-direction:column; }
 
   .topbar{ background:var(--ai); color:#fff; border-bottom:3px solid var(--shu);
-    padding:8px 12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    padding:8px 12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:0 0 auto; }
   .topbar .title{ font-weight:800; font-size:16px; margin-right:6px; }
   .topbar label{ font-size:12px; opacity:.9; }
   select{ font-size:14px; padding:7px 8px; border-radius:8px; border:1px solid #ccc; background:#fff; color:#222; }
@@ -25,7 +25,7 @@
   .play input[type=range]{ flex:1; }
   .clock{ font-variant-numeric:tabular-nums; font-size:13px; min-width:150px; }
 
-  .wrap{ position:relative; height:calc(100% - 0px); }
+  .wrap{ position:relative; flex:1 1 auto; min-height:0; }
   #map{ position:absolute; inset:0; background:#dfe6ea; }
 
   .statsBtn{ position:absolute; right:10px; top:56px; z-index:1000; background:var(--ai); color:#fff;
@@ -52,7 +52,7 @@
 </head>
 <body>
   <div class="topbar">
-    <span class="title">🗺 神輿 運行記録</span>
+    <span class="title">🗺 冨木八朔祭礼 運行記録</span>
     <label>年度</label><select id="yearSel"></select>
     <label>神輿</label><select id="mikoshiSel"><option value="">すべて</option></select>
     <button class="btn" id="playBtn">▶ 再生</button>
@@ -90,10 +90,12 @@
   let routes={};          // id -> [{lat,lng,t}]
   let layers=[];          // 描画中のLeafletレイヤ
   let moveMarkers={};     // id -> 再生用マーカー
+  let trailLines={};      // id -> 再生で通った軌跡ライン
   let tMin=0,tMax=0, playing=false, playTimer=null;
 
   function clearLayers(){ layers.forEach(l=>map.removeLayer(l)); layers=[];
-    Object.values(moveMarkers).forEach(m=>map.removeLayer(m)); moveMarkers={}; }
+    Object.values(moveMarkers).forEach(m=>map.removeLayer(m)); moveMarkers={};
+    Object.values(trailLines).forEach(l=>map.removeLayer(l)); trailLines={}; }
 
   function haversine(a,b){
     const R=6371000, toR=x=>x*Math.PI/180;
@@ -201,10 +203,22 @@
     $("clock").textContent=clock(t);
     selectedIds().forEach(id=>{
       const arr=routes[id];
-      if(t<arr[0].t){ if(moveMarkers[id]){ map.removeLayer(moveMarkers[id]); delete moveMarkers[id]; } return; }
-      const p=arr[bsearchLE(arr,t)];
+      if(t<arr[0].t){
+        if(moveMarkers[id]){ map.removeLayer(moveMarkers[id]); delete moveMarkers[id]; }
+        if(trailLines[id]){ map.removeLayer(trailLines[id]); delete trailLines[id]; }
+        return;
+      }
+      const idx=bsearchLE(arr,t);
+      const p=arr[idx];
+      // 現在位置マーカー
       if(!moveMarkers[id]) moveMarkers[id]=L.marker([p.lat,p.lng],{icon:crestIcon(id),zIndexOffset:1000}).addTo(map).bindPopup(nameOf(id));
       else moveMarkers[id].setLatLng([p.lat,p.lng]);
+      // 通ってきた軌跡（出発〜現在位置まで）を伸ばす
+      const seg=[]; for(let k=0;k<=idx;k++) seg.push([arr[k].lat,arr[k].lng]);
+      if(seg.length>=2){
+        if(!trailLines[id]) trailLines[id]=L.polyline(seg,{color:colorOf(id),weight:5,opacity:.95}).addTo(map);
+        else trailLines[id].setLatLngs(seg);
+      } else if(trailLines[id]){ map.removeLayer(trailLines[id]); delete trailLines[id]; }
     });
   }
 
