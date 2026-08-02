@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>冨木八朔祭礼デジタルマップ</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="./css/style.css?v=13" />
+<link rel="stylesheet" href="./css/style.css?v=14" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="lantern">🏮</span> 冨木八朔祭礼デジタルマップ</div>
+    <divlass="brand"><span class="lantern">🏮</span> 冨木八朔祭礼デジタルマップ</div>
     <div class="clock" id="clock">--:--:--</div>
   </header>
 
@@ -21,9 +21,9 @@
         <div class="search">
           <input id="search" type="search" placeholder="神輿名で検索（例：森之内（本社））" autocomplete="off">
         </div>
-        <div class="counts" id="counts">受信 0 ／ 通信断 0 ／ 未受信 0</div>
       </div>
       <ul class="list" id="list"></ul>
+      <div class="panel-note">※神輿の位置はGPS情報をもとに表示しています。通信状況等により、実際の位置や更新時刻と差が生じる場合があります。</div>
       <div class="panel-foot" id="foot">最終取得：--</div>
     </aside>
 
@@ -34,12 +34,15 @@
       <button class="layer-opt sel" data-base="std" role="menuitemradio"><span class="chk">✓</span>標準地図</button>
       <button class="layer-opt" data-base="photo" role="menuitemradio"><span class="chk"></span>航空写真</button>
     </div>
+
+    <button class="info-btn" id="infoBtn" aria-label="表示についての注意">ⓘ</button>
+    <div class="info-bubble" id="infoBubble">※神輿の位置はGPS情報をもとに表示しています。通信状況等により、実際の位置や更新時刻と差が生じる場合があります。</div>
   </div>
 
   <div class="banner" id="banner"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./js/config.js?v=11"></script>
-<script src="./js/map.js?v=13"></script>
+<script src="./js/map.js?v=14"></script>
 </body>
 </html>
