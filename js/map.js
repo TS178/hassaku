@@ -229,16 +229,18 @@ function updateList(){
 function focusMikoshi(id){
   const mk = markers[id];
   if (mk){
-    // いったん全マーカーの重なり順をリセット
+    // 重なり対策：全マーカーを通常順に戻し、選んだ神輿を最前面へ
     Object.values(markers).forEach(m => m.setZIndexOffset(0));
-    // 選んだ神輿を最前面へ
     mk.setZIndexOffset(1000);
+    // 地図を移動し、アニメーション後にも開き直して確実に表示
     map.setView(mk.getLatLng(), Math.max(map.getZoom(), 16));
     mk.openPopup();
+    setTimeout(() => mk.openPopup(), 350);
   }
   if (window.matchMedia("(max-width:720px)").matches){
     document.getElementById("panel").classList.remove("open");
-    document.getElementById("panelToggle").textContent = "🔍 キリコ・神輿等　検索 ▲";
+    const tg = document.getElementById("panelToggle");
+    if (tg) tg.textContent = tg.textContent.replace("▼", "▲");
   }
 }
 
