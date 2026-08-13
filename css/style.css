@@ -143,20 +143,18 @@ body{
   padding:9px 14px;
 }
 
-/* ===== 注意書き（地図右下のⓘ・半透明） ===== */
+/* 注意書きⓘ（上部バーの右端） */
 .info-btn{
-  position:absolute; left:12px; bottom:14px; z-index:1200;
-  width:34px; height:34px; border-radius:50%;
-  background:#fff; color:var(--ai); border:2px solid var(--ai);
-  font-size:17px; line-height:1; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  opacity:.5; box-shadow:0 2px 6px rgba(0,0,0,.2);
-  transition:opacity .15s;
+  margin-left:auto;                 /* バーの右端へ寄せる */
+  width:30px; height:30px; border-radius:50%;
+  background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.7);
+  font-size:15px; line-height:1; cursor:pointer; opacity:.55;
+  display:flex; align-items:center; justify-content:center; flex:none;
 }
-.info-btn:hover{ opacity:.85; }
-.info-btn.on{ opacity:1; background:var(--ai); color:#fff; }
+.info-btn:hover{ opacity:.9; }
+.info-btn.on{ opacity:1; background:rgba(255,255,255,.2); }
 .info-bubble{
-  position:absolute; left:12px; bottom:56px; z-index:1300;
+  position:absolute; right:12px; top:52px; z-index:1300;
   max-width:min(320px,80vw); background:#fff; color:#444;
   border:1px solid var(--ai); border-radius:10px;
   padding:12px 14px; font-size:12px; line-height:1.7;
