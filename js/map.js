@@ -1,5 +1,5 @@
 /* ============================================================
- *  冨木八朔祭礼デジタルマップ 本体ロジック
+ *  神輿現在地マップ 本体ロジック
  * ============================================================ */
 
 /* ---- 地図の初期化 ---- */
@@ -229,10 +229,8 @@ function updateList(){
 function focusMikoshi(id){
   const mk = markers[id];
   if (mk){
-    // 重なり対策：全マーカーを通常順に戻し、選んだ神輿を最前面へ
     Object.values(markers).forEach(m => m.setZIndexOffset(0));
     mk.setZIndexOffset(1000);
-    // 地図を移動し、アニメーション後にも開き直して確実に表示
     map.setView(mk.getLatLng(), Math.max(map.getZoom(), 16));
     mk.openPopup();
     setTimeout(() => mk.openPopup(), 350);
@@ -305,7 +303,7 @@ document.getElementById("search").addEventListener("input", updateList);
 document.getElementById("panelToggle").addEventListener("click", () => {
   const p = document.getElementById("panel");
   const open = p.classList.toggle("open");
-  document.getElementById("panelToggle").textContent = open ? "🔍 キリコ・神輿等検索 ▼" : "🔍キリコ・神輿等検索 ▲";
+  document.getElementById("panelToggle").textContent = open ? "🔍 キリコ・神輿等検索 ▼" : "🔍 キリコ・神輿等検索 ▲";
 });
 
 /* ---- 現在地（この端末の画面だけ。サーバーには送らない） ---- */
@@ -387,6 +385,8 @@ document.getElementById("locateBtn").addEventListener("click", locateMe);
   document.addEventListener("click", function(){ openPanel(false); });
   renderChecks();
 })();
+
+setInterval(() => { const _c=document.getElementById("clock"); if(_c) _c.textContent = clock(Date.now()); }, 1000);
 
 /* 30秒ごとに更新（経過時間表示は5秒ごとに再計算） */
 fetchData();
