@@ -386,8 +386,6 @@ document.getElementById("locateBtn").addEventListener("click", locateMe);
   renderChecks();
 })();
 
-setInterval(() => { document.getElementById("clock").textContent = clock(Date.now()); }, 1000);
-
 /* 30秒ごとに更新（経過時間表示は5秒ごとに再計算） */
 fetchData();
 setInterval(fetchData, CONFIG.REFRESH_INTERVAL);
