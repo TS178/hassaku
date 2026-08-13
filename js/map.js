@@ -299,7 +299,7 @@ document.getElementById("search").addEventListener("input", updateList);
 document.getElementById("panelToggle").addEventListener("click", () => {
   const p = document.getElementById("panel");
   const open = p.classList.toggle("open");
-  document.getElementById("panelToggle").textContent = open ? "🔍 神輿検索 ▼" : "🔍 神輿検索 ▲";
+  document.getElementById("panelToggle").textContent = open ? "🔍 キリコ・神輿等検索 ▼" : "🔍キリコ・神輿等検索 ▲";
 });
 
 /* ---- 現在地（この端末の画面だけ。サーバーには送らない） ---- */
