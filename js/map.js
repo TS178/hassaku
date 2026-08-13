@@ -229,6 +229,10 @@ function updateList(){
 function focusMikoshi(id){
   const mk = markers[id];
   if (mk){
+    // いったん全マーカーの重なり順をリセット
+    Object.values(markers).forEach(m => m.setZIndexOffset(0));
+    // 選んだ神輿を最前面へ
+    mk.setZIndexOffset(1000);
     map.setView(mk.getLatLng(), Math.max(map.getZoom(), 16));
     mk.openPopup();
   }
