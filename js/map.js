@@ -1,5 +1,5 @@
 /* ============================================================
- *  神輿現在地マップ 本体ロジック
+ *  冨木八朔祭礼デジタルマップ 本体ロジック
  * ============================================================ */
 
 /* ---- 地図の初期化 ---- */
@@ -212,11 +212,11 @@ function updateList(){
     const li = document.createElement("li");
     li.className = "row";
     li.innerHTML =
-      '<div class="row-crest' + (c.offline ? " off" : "") + '" style="border-color:' + m.color + '">' +
+      '<div class="row-crest' + (c.offline ? " off" : "") + '">' +
         '<img src="' + (m.icon || "") + '" alt="">' +
       "</div>" +
       '<div class="row-main">' +
-        '<div class="row-name">' + m.name + "</div>" +
+        '<div class="row-name"><span class="row-dot" style="background:' + m.color + '"></span>' + m.name + "</div>" +
         moveLine +
         '<div class="row-sub">' + (c.known ? "更新 " + ago(c.sec) : "位置情報なし") + "</div>" +
       "</div>";
@@ -234,7 +234,7 @@ function focusMikoshi(id){
   }
   if (window.matchMedia("(max-width:720px)").matches){
     document.getElementById("panel").classList.remove("open");
-    document.getElementById("panelToggle").textContent = "🔍 神輿検索 ▲";
+    document.getElementById("panelToggle").textContent = "🔍 キリコ・神輿等　検索 ▲";
   }
 }
 
