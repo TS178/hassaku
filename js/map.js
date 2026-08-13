@@ -134,7 +134,7 @@ function popupHtml(m, c){
     if (mi.moving && mi.dirText) html += '<div class="line">進行方向：' + mi.arrow + " " + mi.dirText + "</div>";
   }
   html += '<div class="line">現在地：' + d.lat.toFixed(5) + ", " + d.lng.toFixed(5) + "</div>";
-  if (d.link) html += '<div class="line"><a href="' + d.link + '" target="_blank" rel="noopener">🔗 関連リンク</a></div>';
+  if (d.img) html += '<div class="pop-img"><img src="' + d.img + '" alt="" loading="lazy"></div>';
   html += dirBtn(d.lat, d.lng) + "</div>";
   return html;
 }
