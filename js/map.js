@@ -174,12 +174,12 @@ function updateMarkers(){
     if (!markers[m.id]){
       markers[m.id] = L.marker(pos, { icon: makeIcon(m, c.offline) }).addTo(map);
       markers[m.id].bindPopup(popupHtml(m, c), { autoPan: false });
-      markers[m.id]._off = c.offline;
+      markers[m.id]._offState = c.offline;
     } else {
       markers[m.id].setLatLng(pos);
-      if (markers[m.id]._off !== c.offline){   // 通信断状態が変わったときだけアイコン再生成
+      if (markers[m.id]._offState !== c.offline){   // 通信断状態が変わったときだけアイコン再生成
         markers[m.id].setIcon(makeIcon(m, c.offline));
-        markers[m.id]._off = c.offline;
+        markers[m.id]._offState = c.offline;
       }
       markers[m.id].setPopupContent(popupHtml(m, c));
     }
