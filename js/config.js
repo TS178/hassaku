@@ -44,7 +44,7 @@ const CONFIG = {
     { id: "m12", name: "大西",           color: "#E23B2E", icon: "img/m12.png?v=3" },
     { id: "m13", name: "相神",           color: "#C9A227", icon: "img/m13.png?v=3" },
     { id: "m14", name: "中浜",           color: "#EDEDED", icon: "img/m14.png?v=3" },
-     { id: "g01", name: "⭐ガチャガチャ⭐", color: "#E53935", icon: "img/g01.png?v=3" }
+     { id: "g01", name: "⭐ガチャガチャ⭐", color: "#8E24AA", icon: "img/g01.png?v=3" }
   ],
 
   /* ⑦ トイレの場所（増やす場合はここに { name, lat, lng } の行を足すだけ） */
